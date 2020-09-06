@@ -20,15 +20,14 @@
 # ----------------------------------------------------------------------
 
 
-
 class ErrorCodes(object):
-  streamReading         = "E10001"
-  tooManyModelErrs      = "E10002"
-  hypersearchLogicErr   = "E10003"
-  productionModelErr    = "E10004"      # General PM error
-  modelCommandFormatErr = "E10005"      # Invalid model command request object
-  tooManyFailedWorkers  = "E10006"
-  unspecifiedErr        = "E10007"
-  modelInputLostErr     = "E10008"      # Input stream was garbage-collected
-  requestOutOfRange     = "E10009"      # If a request range is invalid
-  invalidType           = "E10010"      # Invalid 
+    streamReading = "E10001"
+    tooManyModelErrs = "E10002"
+    hypersearchLogicErr = "E10003"
+    productionModelErr = "E10004"      # General PM error
+    modelCommandFormatErr = "E10005"      # Invalid model command request object
+    tooManyFailedWorkers = "E10006"
+    unspecifiedErr = "E10007"
+    modelInputLostErr = "E10008"      # Input stream was garbage-collected
+    requestOutOfRange = "E10009"      # If a request range is invalid
+    invalidType = "E10010"      # Invalid

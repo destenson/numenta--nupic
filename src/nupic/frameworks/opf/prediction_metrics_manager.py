@@ -37,7 +37,6 @@ from nupic.frameworks.opf import metrics
 from opf_utils import InferenceType, InferenceElement
 
 
-
 # MetricValueElement class
 #
 # Represents an individual metric value element in a list returned by
@@ -49,453 +48,441 @@ from opf_utils import InferenceType, InferenceElement
 MetricValueElement = namedtuple("MetricValueElement", ["spec", "value"])
 
 
-
 class MetricsManager(object):
-  """ 
-  This is a class to handle the computation of metrics properly. This class
-  takes in an inferenceType, and it assumes that it is associcated with a single
-  model 
-
-  :param metricSpecs: (list) of 
-         :class:`~nupic.frameworks.opf.metrics.MetricSpec` objects that specify 
-         which metrics should be calculated.
-  :param fieldInfo: (list) of :class:`~nupic.data.field_meta.FieldMetaInfo`
-         objects.
-  :param inferenceType: (:class:`~nupic.frameworks.opf.opf_utils.InferenceType`
-         value that specifies the inference type of the associated model. This 
-         affects how metrics are calculated. FOR EXAMPLE, temporal models save 
-         the inference from the previous timestep to match it to the ground 
-         truth value in the current timestep.
-  """
-
-  # Map from inference element to sensor input element. This helps us find the
-  # appropriate ground truth field for a given inference element
-
-  def __init__(self, metricSpecs, fieldInfo, inferenceType):
-    self.__metricSpecs = []
-    self.__metrics = []
-    self.__metricLabels = []
-
-    # Maps field names to indices. Useful for looking up input/predictions by
-    # field name
-    self.__fieldNameIndexMap = dict( [(info.name, i) \
-                                      for i, info in enumerate(fieldInfo)] )
-
-    self.__constructMetricsModules(metricSpecs)
-    self.__currentGroundTruth = None
-    self.__currentInference = None
-    self.__currentResult = None
-
-    self.__isTemporal = InferenceType.isTemporal(inferenceType)
-    if self.__isTemporal:
-      self.__inferenceShifter = InferenceShifter()
-
-
-  def update(self, results):
-    """
-    Compute the new metrics values, given the next inference/ground-truth values
-
-    :param results: (:class:`~nupic.frameworks.opf.opf_utils.ModelResult`) 
-           object that was computed during the last iteration of the model.
-
-    :returns: (dict) where each key is the metric-name, and the values are
-              it scalar value.
-
-    """
-
-    #print "\n\n---------------------------------------------------------------"
-    #print "Model results: \nrawInput:%s \ninferences:%s" % \
-    #      (pprint.pformat(results.rawInput), pprint.pformat(results.inferences))
-
-    self._addResults(results)
-
-    if  not self.__metricSpecs \
-        or self.__currentInference is None:
-      return {}
-
-    metricResults = {}
-    for metric, spec, label in zip(self.__metrics,
-                                   self.__metricSpecs,
-                                   self.__metricLabels):
-
-      inferenceElement = spec.inferenceElement
-      field = spec.field
-      groundTruth = self._getGroundTruth(inferenceElement)
-      inference = self._getInference(inferenceElement)
-      rawRecord = self._getRawGroundTruth()
-      result = self.__currentResult
-      if field:
-        if type(inference) in (list, tuple):
-          if field in self.__fieldNameIndexMap:
-            # NOTE: If the predicted field is not fed in at the bottom, we
-            #  won't have it in our fieldNameIndexMap
-            fieldIndex = self.__fieldNameIndexMap[field]
-            inference = inference[fieldIndex]
-          else:
-            inference = None
-        if groundTruth is not None:
-          if type(groundTruth) in (list, tuple):
-            if field in self.__fieldNameIndexMap:
-              # NOTE: If the predicted field is not fed in at the bottom, we
-              #  won't have it in our fieldNameIndexMap
-              fieldIndex = self.__fieldNameIndexMap[field]
-              groundTruth = groundTruth[fieldIndex]
-            else:
-              groundTruth = None
-          else:
-            # groundTruth could be a dict based off of field names
-            groundTruth = groundTruth[field]
-
-      metric.addInstance(groundTruth=groundTruth,
-                         prediction=inference,
-                         record=rawRecord,
-                         result=result)
-
-      metricResults[label] = metric.getMetric()['value']
-
-    return metricResults
-
-
-  def getMetrics(self):
     """ 
-    Gets the current metric values
+    This is a class to handle the computation of metrics properly. This class
+    takes in an inferenceType, and it assumes that it is associcated with a single
+    model 
 
-    :returns: (dict) where each key is the metric-name, and the values are
-              it scalar value. Same as the output of 
-              :meth:`~nupic.frameworks.opf.prediction_metrics_manager.MetricsManager.update`
+    :param metricSpecs: (list) of 
+           :class:`~nupic.frameworks.opf.metrics.MetricSpec` objects that specify 
+           which metrics should be calculated.
+    :param fieldInfo: (list) of :class:`~nupic.data.field_meta.FieldMetaInfo`
+           objects.
+    :param inferenceType: (:class:`~nupic.frameworks.opf.opf_utils.InferenceType`
+           value that specifies the inference type of the associated model. This 
+           affects how metrics are calculated. FOR EXAMPLE, temporal models save 
+           the inference from the previous timestep to match it to the ground 
+           truth value in the current timestep.
     """
 
-    result = {}
+    # Map from inference element to sensor input element. This helps us find the
+    # appropriate ground truth field for a given inference element
 
-    for metricObj, label in zip(self.__metrics, self.__metricLabels):
-      value = metricObj.getMetric()
-      result[label] = value['value']
+    def __init__(self, metricSpecs, fieldInfo, inferenceType):
+        self.__metricSpecs = []
+        self.__metrics = []
+        self.__metricLabels = []
 
-    return result
+        # Maps field names to indices. Useful for looking up input/predictions by
+        # field name
+        self.__fieldNameIndexMap = dict([(info.name, i)
+                                         for i, info in enumerate(fieldInfo)])
 
+        self.__constructMetricsModules(metricSpecs)
+        self.__currentGroundTruth = None
+        self.__currentInference = None
+        self.__currentResult = None
 
-  def getMetricDetails(self, metricLabel):
-    """ 
-    Gets detailed info about a given metric, in addition to its value. This
-    may including any statistics or auxilary data that are computed for a given
-    metric.
+        self.__isTemporal = InferenceType.isTemporal(inferenceType)
+        if self.__isTemporal:
+            self.__inferenceShifter = InferenceShifter()
 
-    :param metricLabel: (string) label of the given metric (see 
-           :class:`~nupic.frameworks.opf.metrics.MetricSpec`)
+    def update(self, results):
+        """
+        Compute the new metrics values, given the next inference/ground-truth values
 
-    :returns: (dict) of metric information, as returned by 
-             :meth:`nupic.frameworks.opf.metrics.MetricsIface.getMetric`.
-    """
-    try:
-      metricIndex = self.__metricLabels.index(metricLabel)
-    except IndexError:
-      return None
+        :param results: (:class:`~nupic.frameworks.opf.opf_utils.ModelResult`) 
+               object that was computed during the last iteration of the model.
 
-    return self.__metrics[metricIndex].getMetric()
+        :returns: (dict) where each key is the metric-name, and the values are
+                  it scalar value.
 
+        """
 
-  def getMetricLabels(self):
-    """
-    :returns: (list) of labels for the metrics that are being calculated
-    """
-    return tuple(self.__metricLabels)
+        # print "\n\n---------------------------------------------------------------"
+        # print "Model results: \nrawInput:%s \ninferences:%s" % \
+        #      (pprint.pformat(results.rawInput), pprint.pformat(results.inferences))
 
+        self._addResults(results)
 
-  def _addResults(self, results):
-    """
-    Stores the current model results in the manager's internal store
+        if not self.__metricSpecs \
+                or self.__currentInference is None:
+            return {}
 
-    Parameters:
-    -----------------------------------------------------------------------
-    results:  A ModelResults object that contains the current timestep's
-              input/inferences
-    """
-    # -----------------------------------------------------------------------
-    # If the model potentially has temporal inferences.
-    if self.__isTemporal:
-      shiftedInferences = self.__inferenceShifter.shift(results).inferences
-      self.__currentResult = copy.deepcopy(results)
-      self.__currentResult.inferences = shiftedInferences
-      self.__currentInference = shiftedInferences
+        metricResults = {}
+        for metric, spec, label in zip(self.__metrics,
+                                       self.__metricSpecs,
+                                       self.__metricLabels):
 
-    # -----------------------------------------------------------------------
-    # The current model has no temporal inferences.
-    else:
-      self.__currentResult = copy.deepcopy(results)
-      self.__currentInference = copy.deepcopy(results.inferences)
+            inferenceElement = spec.inferenceElement
+            field = spec.field
+            groundTruth = self._getGroundTruth(inferenceElement)
+            inference = self._getInference(inferenceElement)
+            rawRecord = self._getRawGroundTruth()
+            result = self.__currentResult
+            if field:
+                if type(inference) in (list, tuple):
+                    if field in self.__fieldNameIndexMap:
+                        # NOTE: If the predicted field is not fed in at the bottom, we
+                        #  won't have it in our fieldNameIndexMap
+                        fieldIndex = self.__fieldNameIndexMap[field]
+                        inference = inference[fieldIndex]
+                    else:
+                        inference = None
+                if groundTruth is not None:
+                    if type(groundTruth) in (list, tuple):
+                        if field in self.__fieldNameIndexMap:
+                            # NOTE: If the predicted field is not fed in at the bottom, we
+                            #  won't have it in our fieldNameIndexMap
+                            fieldIndex = self.__fieldNameIndexMap[field]
+                            groundTruth = groundTruth[fieldIndex]
+                        else:
+                            groundTruth = None
+                    else:
+                        # groundTruth could be a dict based off of field names
+                        groundTruth = groundTruth[field]
 
-    # -----------------------------------------------------------------------
-    # Save the current ground-truth results
-    self.__currentGroundTruth = copy.deepcopy(results)
+            metric.addInstance(groundTruth=groundTruth,
+                               prediction=inference,
+                               record=rawRecord,
+                               result=result)
 
+            metricResults[label] = metric.getMetric()['value']
 
-  def _getGroundTruth(self, inferenceElement):
-    """
-    Get the actual value for this field
+        return metricResults
 
-    Parameters:
-    -----------------------------------------------------------------------
-    sensorInputElement:       The inference element (part of the inference) that
-                            is being used for this metric
-    """
-    sensorInputElement = InferenceElement.getInputElement(inferenceElement)
-    if sensorInputElement is None:
-      return None
-    return getattr(self.__currentGroundTruth.sensorInput, sensorInputElement)
+    def getMetrics(self):
+        """ 
+        Gets the current metric values
 
+        :returns: (dict) where each key is the metric-name, and the values are
+                  it scalar value. Same as the output of 
+                  :meth:`~nupic.frameworks.opf.prediction_metrics_manager.MetricsManager.update`
+        """
 
-  def _getInference(self, inferenceElement):
-    """
-    Get what the inferred value for this field was
+        result = {}
 
-    Parameters:
-    -----------------------------------------------------------------------
-    inferenceElement:       The inference element (part of the inference) that
-                            is being used for this metric
-    """
-    if self.__currentInference is not None:
-      return self.__currentInference.get(inferenceElement, None)
+        for metricObj, label in zip(self.__metrics, self.__metricLabels):
+            value = metricObj.getMetric()
+            result[label] = value['value']
 
-    return None
+        return result
 
+    def getMetricDetails(self, metricLabel):
+        """ 
+        Gets detailed info about a given metric, in addition to its value. This
+        may including any statistics or auxilary data that are computed for a given
+        metric.
 
-  def _getRawGroundTruth(self):
-    """
-    Get what the inferred value for this field was
+        :param metricLabel: (string) label of the given metric (see 
+               :class:`~nupic.frameworks.opf.metrics.MetricSpec`)
 
-    Parameters:
-    -----------------------------------------------------------------------
-    inferenceElement:       The inference element (part of the inference) that
-                            is being used for this metric
-    """
+        :returns: (dict) of metric information, as returned by 
+                 :meth:`nupic.frameworks.opf.metrics.MetricsIface.getMetric`.
+        """
+        try:
+            metricIndex = self.__metricLabels.index(metricLabel)
+        except IndexError:
+            return None
 
-    return self.__currentGroundTruth.rawInput
+        return self.__metrics[metricIndex].getMetric()
 
+    def getMetricLabels(self):
+        """
+        :returns: (list) of labels for the metrics that are being calculated
+        """
+        return tuple(self.__metricLabels)
 
-  def __constructMetricsModules(self, metricSpecs):
-    """
-    Creates the required metrics modules
+    def _addResults(self, results):
+        """
+        Stores the current model results in the manager's internal store
 
-    Parameters:
-    -----------------------------------------------------------------------
-    metricSpecs:
-      A sequence of MetricSpec objects that specify which metric modules to
-      instantiate
-    """
-    if not metricSpecs:
-      return
+        Parameters:
+        -----------------------------------------------------------------------
+        results:  A ModelResults object that contains the current timestep's
+                  input/inferences
+        """
+        # -----------------------------------------------------------------------
+        # If the model potentially has temporal inferences.
+        if self.__isTemporal:
+            shiftedInferences = self.__inferenceShifter.shift(
+                results).inferences
+            self.__currentResult = copy.deepcopy(results)
+            self.__currentResult.inferences = shiftedInferences
+            self.__currentInference = shiftedInferences
 
-    self.__metricSpecs = metricSpecs
-    for spec in metricSpecs:
-      if not InferenceElement.validate(spec.inferenceElement):
-        raise ValueError("Invalid inference element for metric spec: %r" %spec)
+        # -----------------------------------------------------------------------
+        # The current model has no temporal inferences.
+        else:
+            self.__currentResult = copy.deepcopy(results)
+            self.__currentInference = copy.deepcopy(results.inferences)
 
-      self.__metrics.append(metrics.getModule(spec))
-      self.__metricLabels.append(spec.getLabel())
+        # -----------------------------------------------------------------------
+        # Save the current ground-truth results
+        self.__currentGroundTruth = copy.deepcopy(results)
 
+    def _getGroundTruth(self, inferenceElement):
+        """
+        Get the actual value for this field
+
+        Parameters:
+        -----------------------------------------------------------------------
+        sensorInputElement:       The inference element (part of the inference) that
+                                is being used for this metric
+        """
+        sensorInputElement = InferenceElement.getInputElement(inferenceElement)
+        if sensorInputElement is None:
+            return None
+        return getattr(self.__currentGroundTruth.sensorInput, sensorInputElement)
+
+    def _getInference(self, inferenceElement):
+        """
+        Get what the inferred value for this field was
+
+        Parameters:
+        -----------------------------------------------------------------------
+        inferenceElement:       The inference element (part of the inference) that
+                                is being used for this metric
+        """
+        if self.__currentInference is not None:
+            return self.__currentInference.get(inferenceElement, None)
+
+        return None
+
+    def _getRawGroundTruth(self):
+        """
+        Get what the inferred value for this field was
+
+        Parameters:
+        -----------------------------------------------------------------------
+        inferenceElement:       The inference element (part of the inference) that
+                                is being used for this metric
+        """
+
+        return self.__currentGroundTruth.rawInput
+
+    def __constructMetricsModules(self, metricSpecs):
+        """
+        Creates the required metrics modules
+
+        Parameters:
+        -----------------------------------------------------------------------
+        metricSpecs:
+          A sequence of MetricSpec objects that specify which metric modules to
+          instantiate
+        """
+        if not metricSpecs:
+            return
+
+        self.__metricSpecs = metricSpecs
+        for spec in metricSpecs:
+            if not InferenceElement.validate(spec.inferenceElement):
+                raise ValueError(
+                    "Invalid inference element for metric spec: %r" % spec)
+
+            self.__metrics.append(metrics.getModule(spec))
+            self.__metricLabels.append(spec.getLabel())
 
 
 def test():
 
-  _testMetricsMgr()
-  _testTemporalShift()
-  _testMetricLabels()
+    _testMetricsMgr()
+    _testTemporalShift()
+    _testMetricLabels()
 
-  return
-
+    return
 
 
 def _testMetricsMgr():
-  print "*Testing Metrics Managers*..."
-  from nupic.data.field_meta import (
-    FieldMetaInfo,
-    FieldMetaType,
-    FieldMetaSpecial)
+    print "*Testing Metrics Managers*..."
+    from nupic.data.field_meta import (
+        FieldMetaInfo,
+        FieldMetaType,
+        FieldMetaSpecial)
 
-  from nupic.frameworks.opf.metrics import MetricSpec
-  from nupic.frameworks.opf.opf_utils import ModelResult, SensorInput
-  onlineMetrics = (MetricSpec(metric="aae", inferenceElement='', \
-                              field="consumption", params={}),)
+    from nupic.frameworks.opf.metrics import MetricSpec
+    from nupic.frameworks.opf.opf_utils import ModelResult, SensorInput
+    onlineMetrics = (MetricSpec(metric="aae", inferenceElement='',
+                                field="consumption", params={}),)
 
-  print "TESTING METRICS MANAGER (BASIC PLUMBING TEST)..."
+    print "TESTING METRICS MANAGER (BASIC PLUMBING TEST)..."
 
-  modelFieldMetaInfo = (
-    FieldMetaInfo(name='temperature',
-                  type=FieldMetaType.float,
-                  special=FieldMetaSpecial.none),
-    FieldMetaInfo(name='consumption',
-              type=FieldMetaType.float,
-              special=FieldMetaSpecial.none)
-  )
+    modelFieldMetaInfo = (
+        FieldMetaInfo(name='temperature',
+                      type=FieldMetaType.float,
+                      special=FieldMetaSpecial.none),
+        FieldMetaInfo(name='consumption',
+                      type=FieldMetaType.float,
+                      special=FieldMetaSpecial.none)
+    )
 
-  # -----------------------------------------------------------------------
-  # Test to make sure that invalid InferenceElements are caught
-  try:
-    MetricsManager(
-    metricSpecs=onlineMetrics,
-    fieldInfo=modelFieldMetaInfo,
-    inferenceType=InferenceType.TemporalNextStep)
-  except ValueError:
-    print "Caught bad inference element: PASS"
+    # -----------------------------------------------------------------------
+    # Test to make sure that invalid InferenceElements are caught
+    try:
+        MetricsManager(
+            metricSpecs=onlineMetrics,
+            fieldInfo=modelFieldMetaInfo,
+            inferenceType=InferenceType.TemporalNextStep)
+    except ValueError:
+        print "Caught bad inference element: PASS"
 
+    print
+    onlineMetrics = (MetricSpec(metric="aae",
+                                inferenceElement=InferenceElement.prediction,
+                                field="consumption", params={}),)
 
-  print
-  onlineMetrics = (MetricSpec(metric="aae",
-                              inferenceElement=InferenceElement.prediction,
-                              field="consumption", params={}),)
+    temporalMetrics = MetricsManager(
+        metricSpecs=onlineMetrics,
+        fieldInfo=modelFieldMetaInfo,
+        inferenceType=InferenceType.TemporalNextStep)
 
-  temporalMetrics = MetricsManager(
-    metricSpecs=onlineMetrics,
-    fieldInfo=modelFieldMetaInfo,
-    inferenceType=InferenceType.TemporalNextStep)
+    inputs = [
+        {
+            'groundTruthRow': [9, 7],
 
+            'predictionsDict': {
+                InferenceType.TemporalNextStep: [12, 17]
+            }
+        },
 
+        {
+            'groundTruthRow': [12, 17],
 
-  inputs = [
-    {
-      'groundTruthRow' : [9, 7],
+            'predictionsDict': {
+                InferenceType.TemporalNextStep: [14, 19]
+            }
+        },
 
-      'predictionsDict' : {
-        InferenceType.TemporalNextStep: [12, 17]
-      }
-    },
+        {
+            'groundTruthRow': [14, 20],
 
-    {
-      'groundTruthRow' : [12, 17],
+            'predictionsDict': {
+                InferenceType.TemporalNextStep: [16, 21]
+            }
+        },
 
-      'predictionsDict' : {
-        InferenceType.TemporalNextStep: [14, 19]
-      }
-    },
+        {
+            'groundTruthRow': [9, 7],
 
-    {
-      'groundTruthRow' : [14, 20],
+            'predictionsDict': {
+                InferenceType.TemporalNextStep: None
+            }
+        },
+    ]
 
-      'predictionsDict' : {
-        InferenceType.TemporalNextStep: [16, 21]
-      }
-    },
+    for element in inputs:
+        groundTruthRow = element['groundTruthRow']
+        tPredictionRow = element['predictionsDict'][InferenceType.TemporalNextStep]
 
-    {
-      'groundTruthRow' : [9, 7],
+        result = ModelResult(sensorInput=SensorInput(dataRow=groundTruthRow,
+                                                     dataEncodings=None,
+                                                     sequenceReset=0,
+                                                     category=None),
+                             inferences={'prediction': tPredictionRow})
 
-      'predictionsDict' : {
-        InferenceType.TemporalNextStep:None
-      }
-    },
-  ]
+        temporalMetrics.update(result)
 
+    assert temporalMetrics.getMetrics().values()[0] == 15.0 / 3.0, \
+        "Expected %f, got %f" % (15.0/3.0,
+                                 temporalMetrics.getMetrics().values()[0])
+    print "ok"
 
-  for element in inputs:
-    groundTruthRow=element['groundTruthRow']
-    tPredictionRow=element['predictionsDict'][InferenceType.TemporalNextStep]
-
-    result = ModelResult(sensorInput=SensorInput(dataRow=groundTruthRow,
-                                                 dataEncodings=None,
-                                                 sequenceReset=0,
-                                                 category=None),
-                         inferences={'prediction':tPredictionRow})
-
-    temporalMetrics.update(result)
-
-  assert temporalMetrics.getMetrics().values()[0] == 15.0 / 3.0, \
-          "Expected %f, got %f" %(15.0/3.0,
-                                  temporalMetrics.getMetrics().values()[0])
-  print "ok"
-
-  return
-
+    return
 
 
 def _testTemporalShift():
-  """ Test to see if the metrics manager correctly shifts records for multistep
-  prediction cases
-  """
-  print "*Testing Multistep temporal shift*..."
-  from nupic.data.field_meta import (
-    FieldMetaInfo,
-    FieldMetaType,
-    FieldMetaSpecial)
+    """ Test to see if the metrics manager correctly shifts records for multistep
+    prediction cases
+    """
+    print "*Testing Multistep temporal shift*..."
+    from nupic.data.field_meta import (
+        FieldMetaInfo,
+        FieldMetaType,
+        FieldMetaSpecial)
 
-  from nupic.frameworks.opf.metrics import MetricSpec
-  from nupic.frameworks.opf.opf_utils import ModelResult, SensorInput
-  onlineMetrics = ()
+    from nupic.frameworks.opf.metrics import MetricSpec
+    from nupic.frameworks.opf.opf_utils import ModelResult, SensorInput
+    onlineMetrics = ()
 
-  modelFieldMetaInfo = (
-    FieldMetaInfo(name='consumption',
-              type=FieldMetaType.float,
-              special=FieldMetaSpecial.none),)
+    modelFieldMetaInfo = (
+        FieldMetaInfo(name='consumption',
+                      type=FieldMetaType.float,
+                      special=FieldMetaSpecial.none),)
 
-  mgr = MetricsManager(metricSpecs=onlineMetrics,
-                       fieldInfo=modelFieldMetaInfo,
-                       inferenceType=InferenceType.TemporalMultiStep)
+    mgr = MetricsManager(metricSpecs=onlineMetrics,
+                         fieldInfo=modelFieldMetaInfo,
+                         inferenceType=InferenceType.TemporalMultiStep)
 
-  groundTruths = [{'consumption':i} for i in range(10)]
-  oneStepInfs = reversed(range(10))
-  threeStepInfs = range(5, 15)
+    groundTruths = [{'consumption': i} for i in range(10)]
+    oneStepInfs = reversed(range(10))
+    threeStepInfs = range(5, 15)
 
-  for iterNum, gt, os, ts in zip(xrange(10), groundTruths,
-                              oneStepInfs, threeStepInfs):
-    inferences = {InferenceElement.multiStepPredictions:{1: os, 3: ts}}
-    sensorInput = SensorInput(dataDict = [gt])
-    result = ModelResult(sensorInput=sensorInput, inferences=inferences)
-    mgr.update(result)
+    for iterNum, gt, os, ts in zip(xrange(10), groundTruths,
+                                   oneStepInfs, threeStepInfs):
+        inferences = {InferenceElement.multiStepPredictions: {1: os, 3: ts}}
+        sensorInput = SensorInput(dataDict=[gt])
+        result = ModelResult(sensorInput=sensorInput, inferences=inferences)
+        mgr.update(result)
 
-    assert mgr._getGroundTruth(InferenceElement.multiStepPredictions)[0] == gt
-    if iterNum < 1:
-      #assert mgr._getInference(InferenceElement.multiStepPredictions) is None
-      assert mgr._getInference(InferenceElement.multiStepPredictions)[1] is None
-    else:
-      prediction = mgr._getInference(InferenceElement.multiStepPredictions)[1]
-      assert prediction == 10 - iterNum
+        assert mgr._getGroundTruth(
+            InferenceElement.multiStepPredictions)[0] == gt
+        if iterNum < 1:
+            #assert mgr._getInference(InferenceElement.multiStepPredictions) is None
+            assert mgr._getInference(
+                InferenceElement.multiStepPredictions)[1] is None
+        else:
+            prediction = mgr._getInference(
+                InferenceElement.multiStepPredictions)[1]
+            assert prediction == 10 - iterNum
 
-    if iterNum < 3:
-      inference = mgr._getInference(InferenceElement.multiStepPredictions)
-      assert inference is None or inference[3] is None
-    else:
-      prediction = mgr._getInference(InferenceElement.multiStepPredictions)[3]
-      assert prediction == iterNum + 2
-
+        if iterNum < 3:
+            inference = mgr._getInference(
+                InferenceElement.multiStepPredictions)
+            assert inference is None or inference[3] is None
+        else:
+            prediction = mgr._getInference(
+                InferenceElement.multiStepPredictions)[3]
+            assert prediction == iterNum + 2
 
 
 def _testMetricLabels():
-  print "\n*Testing Metric Label Generation*..."
+    print "\n*Testing Metric Label Generation*..."
 
-  from nupic.frameworks.opf.metrics import MetricSpec
+    from nupic.frameworks.opf.metrics import MetricSpec
 
-  testTuples = [
-    (MetricSpec('rmse', InferenceElement.prediction, 'consumption'),
-     "prediction:rmse:field=consumption"),
-    (MetricSpec('rmse', InferenceElement.classification),
-     "classification:rmse"),
-    (MetricSpec('rmse', InferenceElement.encodings, 'pounds',
-                params=dict(window=100)),
-     "encodings:rmse:window=100:field=pounds"),
-    (MetricSpec('aae', InferenceElement.prediction, 'pounds',
-                params=dict(window=100, paramA = 10.2, paramB = 20)),
-     "prediction:aae:paramA=10.2:paramB=20:window=100:field=pounds"),
-    (MetricSpec('aae', InferenceElement.prediction,'pounds',
-                params={'window':100, 'paramA':10.2, '1paramB':20}),
-     "prediction:aae:1paramB=20:paramA=10.2:window=100:field=pounds"),
-    (MetricSpec('aae', InferenceElement.prediction,'pounds',
-                params=dict(window=100, paramA = 10.2, paramB =-20)),
-     "prediction:aae:paramA=10.2:paramB=-20:window=100:field=pounds"),
-    (MetricSpec('aae', InferenceElement.prediction, 'pounds',
-                params=dict(window=100, paramA = 10.2, paramB ='square')),
-     "prediction:aae:paramA=10.2:paramB='square':window=100:field=pounds"),
-  ]
+    testTuples = [
+        (MetricSpec('rmse', InferenceElement.prediction, 'consumption'),
+         "prediction:rmse:field=consumption"),
+        (MetricSpec('rmse', InferenceElement.classification),
+            "classification:rmse"),
+        (MetricSpec('rmse', InferenceElement.encodings, 'pounds',
+                    params=dict(window=100)),
+            "encodings:rmse:window=100:field=pounds"),
+        (MetricSpec('aae', InferenceElement.prediction, 'pounds',
+                    params=dict(window=100, paramA=10.2, paramB=20)),
+            "prediction:aae:paramA=10.2:paramB=20:window=100:field=pounds"),
+        (MetricSpec('aae', InferenceElement.prediction, 'pounds',
+                    params={'window': 100, 'paramA': 10.2, '1paramB': 20}),
+            "prediction:aae:1paramB=20:paramA=10.2:window=100:field=pounds"),
+        (MetricSpec('aae', InferenceElement.prediction, 'pounds',
+                    params=dict(window=100, paramA=10.2, paramB=-20)),
+            "prediction:aae:paramA=10.2:paramB=-20:window=100:field=pounds"),
+        (MetricSpec('aae', InferenceElement.prediction, 'pounds',
+                    params=dict(window=100, paramA=10.2, paramB='square')),
+            "prediction:aae:paramA=10.2:paramB='square':window=100:field=pounds"),
+    ]
 
-  for test in testTuples:
-    try:
-      assert test[0].getLabel() == test[1]
-    except:
-      print "Failed Creating label"
-      print "Expected %s \t Got %s" % (test[1], test[0].getLabel())
-      return
+    for test in testTuples:
+        try:
+            assert test[0].getLabel() == test[1]
+        except:
+            print "Failed Creating label"
+            print "Expected %s \t Got %s" % (test[1], test[0].getLabel())
+            return
 
-  print "ok"
-
+    print "ok"
 
 
 if __name__ == "__main__":
-  test()
+    test()

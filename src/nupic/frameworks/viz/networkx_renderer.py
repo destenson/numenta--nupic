@@ -23,18 +23,17 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
-
 class NetworkXRenderer(object):
-  """
-  Network visualization "renderer" implementation to render a network with
-  graphviz.
-  """
+    """
+    Network visualization "renderer" implementation to render a network with
+    graphviz.
+    """
 
-  def __init__(self, layoutFn=nx.spring_layout):
-    self.layoutFn = layoutFn
+    def __init__(self, layoutFn=nx.spring_layout):
+        self.layoutFn = layoutFn
 
-  def render(self, graph):
-    pos = self.layoutFn(graph)
-    nx.draw_networkx(graph, pos)
-    nx.draw_networkx_edge_labels(graph, pos, clip_on=False, rotate=False)
-    plt.show()
+    def render(self, graph):
+        pos = self.layoutFn(graph)
+        nx.draw_networkx(graph, pos)
+        nx.draw_networkx_edge_labels(graph, pos, clip_on=False, rotate=False)
+        plt.show()

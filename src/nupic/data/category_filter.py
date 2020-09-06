@@ -47,32 +47,33 @@ We can't know all the categories before hand so we present to the user a
 freeform input box.
 '''
 
+
 class CategoryFilter(object):
 
-  def __init__(self, filterDict):
-    """
-    TODO describe filterDict schema
-    """
-    self.filterDict = filterDict
+    def __init__(self, filterDict):
+        """
+        TODO describe filterDict schema
+        """
+        self.filterDict = filterDict
 
-  def match(self, record):
-    '''
-    Returns True if the record matches any of the provided filters
-    '''
+    def match(self, record):
+        '''
+        Returns True if the record matches any of the provided filters
+        '''
 
-    for field, meta in self.filterDict.iteritems():
-      index = meta['index']
-      categories = meta['categories']
-      for category in categories:
-        # Record might be blank, handle this
-        if not record:
-          continue
-        if record[index].find(category) != -1:
-          '''
-          This field contains the string we're searching for
-          so we'll keep the records
-          '''
-          return True
+        for field, meta in self.filterDict.iteritems():
+            index = meta['index']
+            categories = meta['categories']
+            for category in categories:
+                # Record might be blank, handle this
+                if not record:
+                    continue
+                if record[index].find(category) != -1:
+                    '''
+                    This field contains the string we're searching for
+                    so we'll keep the records
+                    '''
+                    return True
 
-    # None of the categories were found in this record
-    return False
+        # None of the categories were found in this record
+        return False

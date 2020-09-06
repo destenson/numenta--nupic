@@ -27,44 +27,43 @@ from nupic.frameworks.viz import (DotRenderer,
                                   NetworkXRenderer)
 
 
-
 def main():
-  # Create Network instance
-  network = Network()
+    # Create Network instance
+    network = Network()
 
-  # Add three TestNode regions to network
-  network.addRegion("region1", "TestNode", "")
-  network.addRegion("region2", "TestNode", "")
-  network.addRegion("region3", "TestNode", "")
+    # Add three TestNode regions to network
+    network.addRegion("region1", "TestNode", "")
+    network.addRegion("region2", "TestNode", "")
+    network.addRegion("region3", "TestNode", "")
 
-  # Set dimensions on first region
-  region1 = network.getRegions().getByName("region1")
-  region1.setDimensions(Dimensions([1, 1]))
+    # Set dimensions on first region
+    region1 = network.getRegions().getByName("region1")
+    region1.setDimensions(Dimensions([1, 1]))
 
-  # Link regions
-  network.link("region1", "region2", "UniformLink", "")
-  network.link("region2", "region1", "UniformLink", "")
-  network.link("region1", "region3", "UniformLink", "")
-  network.link("region2", "region3", "UniformLink", "")
+    # Link regions
+    network.link("region1", "region2", "UniformLink", "")
+    network.link("region2", "region1", "UniformLink", "")
+    network.link("region1", "region3", "UniformLink", "")
+    network.link("region2", "region3", "UniformLink", "")
 
-  # Initialize network
-  network.initialize()
+    # Initialize network
+    network.initialize()
 
-  # Initialize Network Visualizer
-  viz = NetworkVisualizer(network)
+    # Initialize Network Visualizer
+    viz = NetworkVisualizer(network)
 
-  # Render w/ graphviz
-  viz.render(renderer=GraphVizRenderer)
+    # Render w/ graphviz
+    viz.render(renderer=GraphVizRenderer)
 
-  # Render w/ networkx
-  viz.render(renderer=NetworkXRenderer)
+    # Render w/ networkx
+    viz.render(renderer=NetworkXRenderer)
 
-  # Render to dot (stdout)
-  viz.render(renderer=DotRenderer)
+    # Render to dot (stdout)
+    viz.render(renderer=DotRenderer)
 
-  # Render to dot (file)
-  viz.render(renderer=lambda: DotRenderer(open("example.dot", "w")))
+    # Render to dot (file)
+    viz.render(renderer=lambda: DotRenderer(open("example.dot", "w")))
 
 
 if __name__ == "__main__":
-  main()
+    main()

@@ -32,112 +32,112 @@ from nupic.support.enum import Enum
 # Will want to change this in the future!
 
 class InferenceElement(Enum(
-              prediction="prediction",
-              encodings="encodings",
-              classification="classification",
-              anomalyScore="anomalyScore",
-              anomalyLabel="anomalyLabel",
-              classConfidences="classConfidences",
-              multiStepPredictions="multiStepPredictions",
-              multiStepBestPredictions="multiStepBestPredictions",
-              multiStepBucketLikelihoods="multiStepBucketLikelihoods",
-              multiStepBucketValues="multiStepBucketValues",
-              )):
+    prediction="prediction",
+    encodings="encodings",
+    classification="classification",
+    anomalyScore="anomalyScore",
+    anomalyLabel="anomalyLabel",
+    classConfidences="classConfidences",
+    multiStepPredictions="multiStepPredictions",
+    multiStepBestPredictions="multiStepBestPredictions",
+    multiStepBucketLikelihoods="multiStepBucketLikelihoods",
+    multiStepBucketValues="multiStepBucketValues",
+)):
 
-  __inferenceInputMap = {
-    "prediction":               "dataRow",
-    "encodings":                "dataEncodings",
-    "classification":           "category",
-    "classConfidences":         "category",
-    "multiStepPredictions":     "dataDict",
-    "multiStepBestPredictions": "dataDict",
-  }
+    __inferenceInputMap = {
+        "prediction":               "dataRow",
+        "encodings":                "dataEncodings",
+        "classification":           "category",
+        "classConfidences":         "category",
+        "multiStepPredictions":     "dataDict",
+        "multiStepBestPredictions": "dataDict",
+    }
 
-  __temporalInferenceElements = None
+    __temporalInferenceElements = None
 
-  @staticmethod
-  def getInputElement(inferenceElement):
-    """ Get the sensor input element that corresponds to the given inference
-    element. This is mainly used for metrics and prediction logging
-    """
-    return InferenceElement.__inferenceInputMap.get(inferenceElement, None)
+    @staticmethod
+    def getInputElement(inferenceElement):
+        """ Get the sensor input element that corresponds to the given inference
+        element. This is mainly used for metrics and prediction logging
+        """
+        return InferenceElement.__inferenceInputMap.get(inferenceElement, None)
 
-  @staticmethod
-  def isTemporal(inferenceElement):
-    """ Returns True if the inference from this timestep is predicted the input
-    for the NEXT timestep.
+    @staticmethod
+    def isTemporal(inferenceElement):
+        """ Returns True if the inference from this timestep is predicted the input
+        for the NEXT timestep.
 
-    NOTE: This should only be checked IF THE MODEL'S INFERENCE TYPE IS ALSO
-    TEMPORAL. That is, a temporal model CAN have non-temporal inference elements,
-    but a non-temporal model CANNOT have temporal inference elements
-    """
-    if InferenceElement.__temporalInferenceElements is None:
-      InferenceElement.__temporalInferenceElements = \
-                                set([InferenceElement.prediction])
+        NOTE: This should only be checked IF THE MODEL'S INFERENCE TYPE IS ALSO
+        TEMPORAL. That is, a temporal model CAN have non-temporal inference elements,
+        but a non-temporal model CANNOT have temporal inference elements
+        """
+        if InferenceElement.__temporalInferenceElements is None:
+            InferenceElement.__temporalInferenceElements = \
+                set([InferenceElement.prediction])
 
-    return inferenceElement in InferenceElement.__temporalInferenceElements
+        return inferenceElement in InferenceElement.__temporalInferenceElements
 
-  @staticmethod
-  def getTemporalDelay(inferenceElement, key=None):
-    """ Returns the number of records that elapse between when an inference is
-    made and when the corresponding input record will appear. For example, a
-    multistep prediction for 3 timesteps out will have a delay of 3
-
-
-    Parameters:
-    -----------------------------------------------------------------------
-
-    inferenceElement:   The InferenceElement value being delayed
-    key:                If the inference is a dictionary type, this specifies
-                        key for the sub-inference that is being delayed
-    """
-    # -----------------------------------------------------------------------
-    # For next step prediction, we shift by 1
-    if inferenceElement in (InferenceElement.prediction,
-                            InferenceElement.encodings):
-      return 1
-    # -----------------------------------------------------------------------
-    # For classification, anomaly scores, the inferences immediately succeed the
-    # inputs
-    if inferenceElement in (InferenceElement.anomalyScore,
-                            InferenceElement.anomalyLabel,
-                            InferenceElement.classification,
-                            InferenceElement.classConfidences):
-      return 0
-    # -----------------------------------------------------------------------
-    # For multistep prediction, the delay is based on the key in the inference
-    # dictionary
-    if inferenceElement in (InferenceElement.multiStepPredictions,
-                            InferenceElement.multiStepBestPredictions):
-      return int(key)
-
-    # -----------------------------------------------------------------------
-    # default: return 0
-    return 0
-
-  @staticmethod
-  def getMaxDelay(inferences):
-    """
-    Returns the maximum delay for the InferenceElements in the inference
-    dictionary
-
-    Parameters:
-    -----------------------------------------------------------------------
-    inferences:   A dictionary where the keys are InferenceElements
-    """
-    maxDelay = 0
-    for inferenceElement, inference in inferences.iteritems():
-      if isinstance(inference, dict):
-        for key in inference.iterkeys():
-          maxDelay = max(InferenceElement.getTemporalDelay(inferenceElement,
-                                                            key),
-                         maxDelay)
-      else:
-        maxDelay = max(InferenceElement.getTemporalDelay(inferenceElement),
-                       maxDelay)
+    @staticmethod
+    def getTemporalDelay(inferenceElement, key=None):
+        """ Returns the number of records that elapse between when an inference is
+        made and when the corresponding input record will appear. For example, a
+        multistep prediction for 3 timesteps out will have a delay of 3
 
 
-    return maxDelay
+        Parameters:
+        -----------------------------------------------------------------------
+
+        inferenceElement:   The InferenceElement value being delayed
+        key:                If the inference is a dictionary type, this specifies
+                            key for the sub-inference that is being delayed
+        """
+        # -----------------------------------------------------------------------
+        # For next step prediction, we shift by 1
+        if inferenceElement in (InferenceElement.prediction,
+                                InferenceElement.encodings):
+            return 1
+        # -----------------------------------------------------------------------
+        # For classification, anomaly scores, the inferences immediately succeed the
+        # inputs
+        if inferenceElement in (InferenceElement.anomalyScore,
+                                InferenceElement.anomalyLabel,
+                                InferenceElement.classification,
+                                InferenceElement.classConfidences):
+            return 0
+        # -----------------------------------------------------------------------
+        # For multistep prediction, the delay is based on the key in the inference
+        # dictionary
+        if inferenceElement in (InferenceElement.multiStepPredictions,
+                                InferenceElement.multiStepBestPredictions):
+            return int(key)
+
+        # -----------------------------------------------------------------------
+        # default: return 0
+        return 0
+
+    @staticmethod
+    def getMaxDelay(inferences):
+        """
+        Returns the maximum delay for the InferenceElements in the inference
+        dictionary
+
+        Parameters:
+        -----------------------------------------------------------------------
+        inferences:   A dictionary where the keys are InferenceElements
+        """
+        maxDelay = 0
+        for inferenceElement, inference in inferences.iteritems():
+            if isinstance(inference, dict):
+                for key in inference.iterkeys():
+                    maxDelay = max(InferenceElement.getTemporalDelay(inferenceElement,
+                                                                     key),
+                                   maxDelay)
+            else:
+                maxDelay = max(InferenceElement.getTemporalDelay(inferenceElement),
+                               maxDelay)
+
+        return maxDelay
+
 
 class InferenceType(Enum("TemporalNextStep",
                          "TemporalClassification",
@@ -147,24 +147,22 @@ class InferenceType(Enum("TemporalNextStep",
                          "TemporalMultiStep",
                          "NontemporalMultiStep")):
 
+    __temporalInferenceTypes = None
 
-  __temporalInferenceTypes = None
+    @staticmethod
+    def isTemporal(inferenceType):
+        """ Returns True if the inference type is 'temporal', i.e. requires a
+        temporal memory in the network.
+        """
+        if InferenceType.__temporalInferenceTypes is None:
+            InferenceType.__temporalInferenceTypes = \
+                set([InferenceType.TemporalNextStep,
+                     InferenceType.TemporalClassification,
+                     InferenceType.TemporalAnomaly,
+                     InferenceType.TemporalMultiStep,
+                     InferenceType.NontemporalMultiStep])
 
-  @staticmethod
-  def isTemporal(inferenceType):
-    """ Returns True if the inference type is 'temporal', i.e. requires a
-    temporal memory in the network.
-    """
-    if InferenceType.__temporalInferenceTypes is None:
-      InferenceType.__temporalInferenceTypes = \
-                                set([InferenceType.TemporalNextStep,
-                                     InferenceType.TemporalClassification,
-                                     InferenceType.TemporalAnomaly,
-                                     InferenceType.TemporalMultiStep,
-                                     InferenceType.NontemporalMultiStep])
-
-    return inferenceType in InferenceType.__temporalInferenceTypes
-
+        return inferenceType in InferenceType.__temporalInferenceTypes
 
 
 # ModelResult - A structure that contains the input to a model and the resulting
@@ -192,39 +190,38 @@ class InferenceType(Enum("TemporalNextStep",
 
 class ModelResult(object):
 
-  __slots__= ("predictionNumber", "rawInput", "sensorInput", "inferences",
-              "metrics", "predictedFieldIdx", "predictedFieldName")
+    __slots__ = ("predictionNumber", "rawInput", "sensorInput", "inferences",
+                 "metrics", "predictedFieldIdx", "predictedFieldName")
 
-  def __init__(self,
-               predictionNumber=None,
-               rawInput=None,
-               sensorInput=None,
-               inferences=None,
-               metrics=None,
-               predictedFieldIdx=None,
-               predictedFieldName=None):
-    self.predictionNumber = predictionNumber
-    self.rawInput = rawInput
-    self.sensorInput = sensorInput
-    self.inferences = inferences
-    self.metrics = metrics
-    self.predictedFieldIdx = predictedFieldIdx
-    self.predictedFieldName = predictedFieldName
+    def __init__(self,
+                 predictionNumber=None,
+                 rawInput=None,
+                 sensorInput=None,
+                 inferences=None,
+                 metrics=None,
+                 predictedFieldIdx=None,
+                 predictedFieldName=None):
+        self.predictionNumber = predictionNumber
+        self.rawInput = rawInput
+        self.sensorInput = sensorInput
+        self.inferences = inferences
+        self.metrics = metrics
+        self.predictedFieldIdx = predictedFieldIdx
+        self.predictedFieldName = predictedFieldName
 
-
-  def __repr__(self):
-     return ("ModelResult("
-             "\tpredictionNumber={0}\n"
-             "\trawInput={1}\n"
-             "\tsensorInput={2}\n"
-             "\tinferences={3}\n"
-             "\tmetrics={4}\n"
-             "\tpredictedFieldIdx={5}\n"
-             "\tpredictedFieldName={6}\n"
-             ")").format(self.predictionNumber,
-                        self.rawInput,
-                        self.sensorInput,
-                        self.inferences,
-                        self.metrics,
-                        self.predictedFieldIdx,
-                        self.predictedFieldName)
+    def __repr__(self):
+        return ("ModelResult("
+                "\tpredictionNumber={0}\n"
+                "\trawInput={1}\n"
+                "\tsensorInput={2}\n"
+                "\tinferences={3}\n"
+                "\tmetrics={4}\n"
+                "\tpredictedFieldIdx={5}\n"
+                "\tpredictedFieldName={6}\n"
+                ")").format(self.predictionNumber,
+                            self.rawInput,
+                            self.sensorInput,
+                            self.inferences,
+                            self.metrics,
+                            self.predictedFieldIdx,
+                            self.predictedFieldName)

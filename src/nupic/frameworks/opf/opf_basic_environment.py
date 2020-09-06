@@ -56,631 +56,604 @@ from nupic.data.inference_shifter import InferenceShifter
 from opf_utils import InferenceType, InferenceElement
 
 
-
 class PredictionMetricsLoggerIface(object):
-  """ This is the interface for output of prediction metrics.
-  """
-  __metaclass__ = ABCMeta
-
-
-  @abstractmethod
-  def emitPeriodicMetrics(self, metrics):
-    """ Emits periodic metrics to stdout in JSON.
-
-    :param metrics: A list of metrics as returned by
-          :meth:`nupic.frameworks.opf.opf_task_driver.OPFTaskDriver.getMetrics`.
+    """ This is the interface for output of prediction metrics.
     """
+    __metaclass__ = ABCMeta
 
+    @abstractmethod
+    def emitPeriodicMetrics(self, metrics):
+        """ Emits periodic metrics to stdout in JSON.
 
-  @abstractmethod
-  def emitFinalMetrics(self, metrics):
-    """ Emits final metrics.
+        :param metrics: A list of metrics as returned by
+              :meth:`nupic.frameworks.opf.opf_task_driver.OPFTaskDriver.getMetrics`.
+        """
 
-    .. note:: the intention is that the final metrics may go to a different
-              place (e.g., csv file) versus :meth:`emitPeriodicMetrics`
-              (e.g., stdout)
+    @abstractmethod
+    def emitFinalMetrics(self, metrics):
+        """ Emits final metrics.
 
-    :param metrics: A list of metrics as returned by
-          :meth:`nupic.frameworks.opf.opf_task_driver.OPFTaskDriver.getMetrics`.
-    """
+        .. note:: the intention is that the final metrics may go to a different
+                  place (e.g., csv file) versus :meth:`emitPeriodicMetrics`
+                  (e.g., stdout)
 
+        :param metrics: A list of metrics as returned by
+              :meth:`nupic.frameworks.opf.opf_task_driver.OPFTaskDriver.getMetrics`.
+        """
 
 
 class DatasetReaderIface(object):
-  """ This is the interface class for a dataset readers
-  """
-  __metaclass__ = ABCMeta
-
-
-  @abstractmethod
-  def getDatasetFieldMetaData(self):
+    """ This is the interface class for a dataset readers
     """
-    :returns:     a tuple of dataset field metadata descriptors that are
-                  arranged in the same order as the columns in the dataset.
-                  Each field metadata descriptor is of type
-                  :class:`nupic.data.field_meta.FieldMetaInfo`
-    """
+    __metaclass__ = ABCMeta
 
+    @abstractmethod
+    def getDatasetFieldMetaData(self):
+        """
+        :returns:     a tuple of dataset field metadata descriptors that are
+                      arranged in the same order as the columns in the dataset.
+                      Each field metadata descriptor is of type
+                      :class:`nupic.data.field_meta.FieldMetaInfo`
+        """
 
-  @abstractmethod
-  def next(self):
-    """
-    :returns:     The next record from the dataset.  The returned record object
-                  is of the same structure as returned by
-                  :meth:`nupic.data.record_stream.RecordStreamIface.getNextRecord`.
-                  Returns ``None`` if the next record is not available yet.
+    @abstractmethod
+    def next(self):
+        """
+        :returns:     The next record from the dataset.  The returned record object
+                      is of the same structure as returned by
+                      :meth:`nupic.data.record_stream.RecordStreamIface.getNextRecord`.
+                      Returns ``None`` if the next record is not available yet.
 
-    :raises: (StopIteration) if a hard "end of file" has been reached
-                  and no more records will be forthcoming.
-    """
-
+        :raises: (StopIteration) if a hard "end of file" has been reached
+                      and no more records will be forthcoming.
+        """
 
 
 class PredictionWriterIface(object):
-  """ This class defines the interface for prediction writer implementation
-  returned by an object factory conforming to PredictionWriterFactoryIface
-  """
-  __metaclass__ = ABCMeta
-
-
-  @abstractmethod
-  def close(self):
-    """ Closes the writer (e.g., close the underlying file)
+    """ This class defines the interface for prediction writer implementation
+    returned by an object factory conforming to PredictionWriterFactoryIface
     """
+    __metaclass__ = ABCMeta
 
-  @abstractmethod
-  def append(self, inputRow, predictionRow, sequenceReset, metrics=None):
-    """ Emits a single prediction as input versus predicted.
+    @abstractmethod
+    def close(self):
+        """ Closes the writer (e.g., close the underlying file)
+        """
 
-    inputRow:       A tuple or list of fields comprising the input data row.
-    predictionRow:  A tuple or list of fields comprising the prediction, or None
-                    if prediction is not available.  The None use case is
-                    intended for temporal inference where there is no matching
-                    prediction for the same timestep as the given ground truth,
-                    such as the case with the very first input record.
-    sequenceReset:  A value that tests True if the input row was
-                    accompanied by a sequence reset signal; False if not
-                    accompanied by a sequence reset signal.
+    @abstractmethod
+    def append(self, inputRow, predictionRow, sequenceReset, metrics=None):
+        """ Emits a single prediction as input versus predicted.
 
-    metrics:        OPTIONAL -A dictionary of metrics that will be written out
-                    with every prediction. The keys are the automatically
-                    generated metric labels (see MetricSpec in
-                    prediction_metrics_manager.py), and the value is the real
-                    number value of the metric.
-    """
+        inputRow:       A tuple or list of fields comprising the input data row.
+        predictionRow:  A tuple or list of fields comprising the prediction, or None
+                        if prediction is not available.  The None use case is
+                        intended for temporal inference where there is no matching
+                        prediction for the same timestep as the given ground truth,
+                        such as the case with the very first input record.
+        sequenceReset:  A value that tests True if the input row was
+                        accompanied by a sequence reset signal; False if not
+                        accompanied by a sequence reset signal.
 
-  @abstractmethod
-  def checkpoint(self, checkpointSink, maxRows):
-    """ Save a checkpoint of the prediction output stream. The checkpoint
-    comprises up to maxRows of the most recent inference records.
+        metrics:        OPTIONAL -A dictionary of metrics that will be written out
+                        with every prediction. The keys are the automatically
+                        generated metric labels (see MetricSpec in
+                        prediction_metrics_manager.py), and the value is the real
+                        number value of the metric.
+        """
 
-    Parameters:
-    ----------------------------------------------------------------------
-    checkpointSink:     A File-like object where predictions checkpoint data, if
-                        any, will be stored.
-    maxRows:            Maximum number of most recent inference rows
-                        to checkpoint.
-    """
+    @abstractmethod
+    def checkpoint(self, checkpointSink, maxRows):
+        """ Save a checkpoint of the prediction output stream. The checkpoint
+        comprises up to maxRows of the most recent inference records.
 
+        Parameters:
+        ----------------------------------------------------------------------
+        checkpointSink:     A File-like object where predictions checkpoint data, if
+                            any, will be stored.
+        maxRows:            Maximum number of most recent inference rows
+                            to checkpoint.
+        """
 
 
 class BasicPredictionMetricsLogger(PredictionMetricsLoggerIface):
-  """ This is the file-based implementation of the interface for output of
-  prediction metrics
+    """ This is the file-based implementation of the interface for output of
+    prediction metrics
 
-  TODO: where should periodic and final predictions go (versus stdout)
+    TODO: where should periodic and final predictions go (versus stdout)
 
-  :param experimentDir: (string) path to directory for experiment to run.
+    :param experimentDir: (string) path to directory for experiment to run.
 
-  :param label: (string) used to distinguish the output's container (e.g.,
-         filename, directory name, property key, etc.).
-  """
-
-  def __init__(self, experimentDir, label):
-    self.__experimentDir = experimentDir
-    self.__label = label
-    return
-
-
-  def __repr__(self):
-    return ("%s(experimentDir=%r,label=%r)" % (self.__class__.__name__,
-                                               self.__experimentDir,
-                                               self.__label))
-
-
-  def emitPeriodicMetrics(self, metrics):
-    jsonString = self._translateMetricsToJSON(metrics, label="PERIODIC")
-
-    self._emitJSONStringToStdout(jsonString)
-    return
-
-
-  def emitFinalMetrics(self, metrics):
-    jsonString = self._translateMetricsToJSON(metrics, label="FINAL")
-    self._emitJSONStringToStdout(jsonString)
-    return
-
-
-  def _translateMetricsToJSON(self, metrics, label):
-    """ Translates the given metrics value to JSON string
-
-    metrics:        A list of dictionaries per OPFTaskDriver.getMetrics():
-
-    Returns:        JSON string representing the given metrics object.
+    :param label: (string) used to distinguish the output's container (e.g.,
+           filename, directory name, property key, etc.).
     """
 
-    # Transcode the MetricValueElement values into JSON-compatible
-    # structure
-    metricsDict = metrics
+    def __init__(self, experimentDir, label):
+        self.__experimentDir = experimentDir
+        self.__label = label
+        return
 
-    # Convert the structure to a display-friendly JSON string
-    def _mapNumpyValues(obj):
-      """
-      """
-      import numpy
+    def __repr__(self):
+        return ("%s(experimentDir=%r,label=%r)" % (self.__class__.__name__,
+                                                   self.__experimentDir,
+                                                   self.__label))
 
-      if isinstance(obj, numpy.float32):
-        return float(obj)
+    def emitPeriodicMetrics(self, metrics):
+        jsonString = self._translateMetricsToJSON(metrics, label="PERIODIC")
 
-      elif isinstance(obj, numpy.bool_):
-        return bool(obj)
+        self._emitJSONStringToStdout(jsonString)
+        return
 
-      elif isinstance(obj, numpy.ndarray):
-        return obj.tolist()
+    def emitFinalMetrics(self, metrics):
+        jsonString = self._translateMetricsToJSON(metrics, label="FINAL")
+        self._emitJSONStringToStdout(jsonString)
+        return
 
-      else:
-        raise TypeError("UNEXPECTED OBJ: %s; class=%s" % (obj, obj.__class__))
+    def _translateMetricsToJSON(self, metrics, label):
+        """ Translates the given metrics value to JSON string
 
+        metrics:        A list of dictionaries per OPFTaskDriver.getMetrics():
 
-    jsonString = json.dumps(metricsDict, indent=4, default=_mapNumpyValues)
+        Returns:        JSON string representing the given metrics object.
+        """
 
-    return jsonString
+        # Transcode the MetricValueElement values into JSON-compatible
+        # structure
+        metricsDict = metrics
 
+        # Convert the structure to a display-friendly JSON string
+        def _mapNumpyValues(obj):
+            """
+            """
+            import numpy
 
-  def _emitJSONStringToStdout(self, jsonString):
-    print '<JSON>'
-    print jsonString
-    print '</JSON>'
+            if isinstance(obj, numpy.float32):
+                return float(obj)
 
+            elif isinstance(obj, numpy.bool_):
+                return bool(obj)
+
+            elif isinstance(obj, numpy.ndarray):
+                return obj.tolist()
+
+            else:
+                raise TypeError("UNEXPECTED OBJ: %s; class=%s" %
+                                (obj, obj.__class__))
+
+        jsonString = json.dumps(metricsDict, indent=4, default=_mapNumpyValues)
+
+        return jsonString
+
+    def _emitJSONStringToStdout(self, jsonString):
+        print '<JSON>'
+        print jsonString
+        print '</JSON>'
 
 
 class BasicDatasetReader(DatasetReaderIface):
-  """ This is a CSV file-based implementation of :class:`DatasetReaderIface`.
+    """ This is a CSV file-based implementation of :class:`DatasetReaderIface`.
 
-  :param streamDefDict: stream definition, as defined `here <stream-def.html>`_.
-  """
+    :param streamDefDict: stream definition, as defined `here <stream-def.html>`_.
+    """
 
-  def __init__(self, streamDefDict):
-    # Create the object to read from
-    self._reader = StreamReader(streamDefDict, saveOutput=True)
-    return
+    def __init__(self, streamDefDict):
+        # Create the object to read from
+        self._reader = StreamReader(streamDefDict, saveOutput=True)
+        return
 
+    def __iter__(self):
+        return self
 
-  def __iter__(self):
-    return self
+    def next(self):
+        row = self._reader.getNextRecordDict()
+        if row == None:
+            raise StopIteration
 
+        return row
 
-  def next(self):
-    row = self._reader.getNextRecordDict()
-    if row == None:
-      raise StopIteration
-
-    return row
-
-
-  def getDatasetFieldMetaData(self):
-    return FieldMetaInfo.createListFromFileFieldList(self._reader.getFields())
-
+    def getDatasetFieldMetaData(self):
+        return FieldMetaInfo.createListFromFileFieldList(self._reader.getFields())
 
 
 class _BasicPredictionWriter(PredictionWriterIface):
-  """ This class defines the basic (file-based) implementation of
-  PredictionWriterIface, whose instances are returned by
-  BasicPredictionWriterFactory
-  """
-  def __init__(self, experimentDir, label, inferenceType,
-               fields, metricNames=None, checkpointSource=None):
-    """ Constructor
-
-    experimentDir:
-                  experiment directory path that contains description.py
-
-    label:        A label string to incorporate into the filename.
-
-
-    inferenceElements:
-
-
-    inferenceType:
-                  An constant from opf_utils.InferenceType for the
-                  requested prediction writer
-
-    fields:       a non-empty sequence of nupic.data.fieldmeta.FieldMetaInfo
-                  representing fields that will be emitted to this prediction
-                  writer
-
-    metricNames:  OPTIONAL - A list of metric names that well be emiited by this
-                  prediction writer
-
-    checkpointSource:
-                  If not None, a File-like object containing the
-                  previously-checkpointed predictions for setting the initial
-                  contents of this PredictionOutputStream.  Will be copied
-                  before returning, if needed.
+    """ This class defines the basic (file-based) implementation of
+    PredictionWriterIface, whose instances are returned by
+    BasicPredictionWriterFactory
     """
-    #assert len(fields) > 0
 
-    self.__experimentDir = experimentDir
+    def __init__(self, experimentDir, label, inferenceType,
+                 fields, metricNames=None, checkpointSource=None):
+        """ Constructor
 
-    # opf_utils.InferenceType kind value
-    self.__inferenceType = inferenceType
+        experimentDir:
+                      experiment directory path that contains description.py
 
-    # A tuple of nupic.data.fieldmeta.FieldMetaInfo
-    self.__inputFieldsMeta = tuple(copy.deepcopy(fields))
-    self.__numInputFields = len(self.__inputFieldsMeta)
-    self.__label = label
-    if metricNames is not None:
-      metricNames.sort()
-    self.__metricNames = metricNames
-
-    # Define our output field meta info
-    self.__outputFieldsMeta = []
-
-    # The list of inputs that we include in the prediction output
-    self._rawInputNames = []
-
-    # Output dataset
-    self.__datasetPath = None
-    self.__dataset = None
-
-    # Save checkpoint data until we're ready to create the output dataset
-    self.__checkpointCache = None
-    if checkpointSource is not None:
-      checkpointSource.seek(0)
-      self.__checkpointCache = StringIO.StringIO()
-      shutil.copyfileobj(checkpointSource, self.__checkpointCache)
-
-    return
+        label:        A label string to incorporate into the filename.
 
 
-  def __openDatafile(self, modelResult):
-    """Open the data file and write the header row"""
-
-    # Write reset bit
-    resetFieldMeta = FieldMetaInfo(
-      name="reset",
-      type=FieldMetaType.integer,
-      special = FieldMetaSpecial.reset)
-
-    self.__outputFieldsMeta.append(resetFieldMeta)
+        inferenceElements:
 
 
-    # -----------------------------------------------------------------------
-    # Write each of the raw inputs that go into the encoders
-    rawInput = modelResult.rawInput
-    rawFields = rawInput.keys()
-    rawFields.sort()
-    for field in rawFields:
-      if field.startswith('_') or field == 'reset':
-        continue
-      value = rawInput[field]
-      meta = FieldMetaInfo(name=field, type=FieldMetaType.string,
-                           special=FieldMetaSpecial.none)
-      self.__outputFieldsMeta.append(meta)
-      self._rawInputNames.append(field)
+        inferenceType:
+                      An constant from opf_utils.InferenceType for the
+                      requested prediction writer
 
+        fields:       a non-empty sequence of nupic.data.fieldmeta.FieldMetaInfo
+                      representing fields that will be emitted to this prediction
+                      writer
 
-    # -----------------------------------------------------------------------
-    # Handle each of the inference elements
-    for inferenceElement, value in modelResult.inferences.iteritems():
-      inferenceLabel = InferenceElement.getLabel(inferenceElement)
+        metricNames:  OPTIONAL - A list of metric names that well be emiited by this
+                      prediction writer
 
-      # TODO: Right now we assume list inferences are associated with
-      # The input field metadata
-      if type(value) in (list, tuple):
-        # Append input and prediction field meta-info
-        self.__outputFieldsMeta.extend(self.__getListMetaInfo(inferenceElement))
+        checkpointSource:
+                      If not None, a File-like object containing the
+                      previously-checkpointed predictions for setting the initial
+                      contents of this PredictionOutputStream.  Will be copied
+                      before returning, if needed.
+        """
+        #assert len(fields) > 0
 
-      elif isinstance(value, dict):
-          self.__outputFieldsMeta.extend(self.__getDictMetaInfo(inferenceElement,
-                                                                value))
-      else:
+        self.__experimentDir = experimentDir
+
+        # opf_utils.InferenceType kind value
+        self.__inferenceType = inferenceType
+
+        # A tuple of nupic.data.fieldmeta.FieldMetaInfo
+        self.__inputFieldsMeta = tuple(copy.deepcopy(fields))
+        self.__numInputFields = len(self.__inputFieldsMeta)
+        self.__label = label
+        if metricNames is not None:
+            metricNames.sort()
+        self.__metricNames = metricNames
+
+        # Define our output field meta info
+        self.__outputFieldsMeta = []
+
+        # The list of inputs that we include in the prediction output
+        self._rawInputNames = []
+
+        # Output dataset
+        self.__datasetPath = None
+        self.__dataset = None
+
+        # Save checkpoint data until we're ready to create the output dataset
+        self.__checkpointCache = None
+        if checkpointSource is not None:
+            checkpointSource.seek(0)
+            self.__checkpointCache = StringIO.StringIO()
+            shutil.copyfileobj(checkpointSource, self.__checkpointCache)
+
+        return
+
+    def __openDatafile(self, modelResult):
+        """Open the data file and write the header row"""
+
+        # Write reset bit
+        resetFieldMeta = FieldMetaInfo(
+            name="reset",
+            type=FieldMetaType.integer,
+            special=FieldMetaSpecial.reset)
+
+        self.__outputFieldsMeta.append(resetFieldMeta)
+
+        # -----------------------------------------------------------------------
+        # Write each of the raw inputs that go into the encoders
+        rawInput = modelResult.rawInput
+        rawFields = rawInput.keys()
+        rawFields.sort()
+        for field in rawFields:
+            if field.startswith('_') or field == 'reset':
+                continue
+            value = rawInput[field]
+            meta = FieldMetaInfo(name=field, type=FieldMetaType.string,
+                                 special=FieldMetaSpecial.none)
+            self.__outputFieldsMeta.append(meta)
+            self._rawInputNames.append(field)
+
+        # -----------------------------------------------------------------------
+        # Handle each of the inference elements
+        for inferenceElement, value in modelResult.inferences.iteritems():
+            inferenceLabel = InferenceElement.getLabel(inferenceElement)
+
+            # TODO: Right now we assume list inferences are associated with
+            # The input field metadata
+            if type(value) in (list, tuple):
+                # Append input and prediction field meta-info
+                self.__outputFieldsMeta.extend(
+                    self.__getListMetaInfo(inferenceElement))
+
+            elif isinstance(value, dict):
+                self.__outputFieldsMeta.extend(self.__getDictMetaInfo(inferenceElement,
+                                                                      value))
+            else:
+
+                if InferenceElement.getInputElement(inferenceElement):
+                    self.__outputFieldsMeta.append(FieldMetaInfo(name=inferenceLabel+".actual",
+                                                                 type=FieldMetaType.string, special=''))
+                self.__outputFieldsMeta.append(FieldMetaInfo(name=inferenceLabel,
+                                                             type=FieldMetaType.string, special=''))
+
+        if self.__metricNames:
+            for metricName in self.__metricNames:
+                metricField = FieldMetaInfo(
+                    name=metricName,
+                    type=FieldMetaType.float,
+                    special=FieldMetaSpecial.none)
+
+                self.__outputFieldsMeta.append(metricField)
+
+        # Create the inference directory for our experiment
+        inferenceDir = _FileUtils.createExperimentInferenceDir(
+            self.__experimentDir)
+
+        # Consctruct the prediction dataset file path
+        filename = (self.__label + "." +
+                    opf_utils.InferenceType.getLabel(self.__inferenceType) +
+                    ".predictionLog.csv")
+        self.__datasetPath = os.path.join(inferenceDir, filename)
+
+        # Create the output dataset
+        print "OPENING OUTPUT FOR PREDICTION WRITER AT: %r" % self.__datasetPath
+        print "Prediction field-meta: %r" % ([tuple(i) for i in self.__outputFieldsMeta],)
+        self.__dataset = FileRecordStream(streamID=self.__datasetPath, write=True,
+                                          fields=self.__outputFieldsMeta)
+
+        # Copy data from checkpoint cache
+        if self.__checkpointCache is not None:
+            self.__checkpointCache.seek(0)
+
+            reader = csv.reader(self.__checkpointCache, dialect='excel')
+
+            # Skip header row
+            try:
+                header = reader.next()
+            except StopIteration:
+                print "Empty record checkpoint initializer for %r" % (self.__datasetPath,)
+            else:
+                assert tuple(self.__dataset.getFieldNames()) == tuple(header), \
+                    "dataset.getFieldNames(): %r; predictionCheckpointFieldNames: %r" % (
+                    tuple(self.__dataset.getFieldNames()), tuple(header))
+
+            # Copy the rows from checkpoint
+            numRowsCopied = 0
+            while True:
+                try:
+                    row = reader.next()
+                except StopIteration:
+                    break
+
+                # print "DEBUG: restoring row from checkpoint: %r" % (row,)
+
+                self.__dataset.appendRecord(row)
+                numRowsCopied += 1
+
+            self.__dataset.flush()
+
+            print "Restored %d rows from checkpoint for %r" % (
+                numRowsCopied, self.__datasetPath)
+
+            # Dispose of our checkpoint cache
+            self.__checkpointCache.close()
+            self.__checkpointCache = None
+
+        return
+
+    def setLoggedMetrics(self, metricNames):
+        """ Tell the writer which metrics should be written
+
+        Parameters:
+        -----------------------------------------------------------------------
+        metricsNames: A list of metric lables to be written
+        """
+        if metricNames is None:
+            self.__metricNames = set([])
+        else:
+            self.__metricNames = set(metricNames)
+
+    def close(self):
+        """ [virtual method override] Closes the writer (e.g., close the underlying
+        file)
+        """
+
+        if self.__dataset:
+            self.__dataset.close()
+        self.__dataset = None
+
+        return
+
+    def __getListMetaInfo(self, inferenceElement):
+        """ Get field metadata information for inferences that are of list type
+        TODO: Right now we assume list inferences are associated with the input field
+        metadata
+        """
+        fieldMetaInfo = []
+        inferenceLabel = InferenceElement.getLabel(inferenceElement)
+
+        for inputFieldMeta in self.__inputFieldsMeta:
+            if InferenceElement.getInputElement(inferenceElement):
+                outputFieldMeta = FieldMetaInfo(
+                    name=inputFieldMeta.name + ".actual",
+                    type=inputFieldMeta.type,
+                    special=inputFieldMeta.special
+                )
+
+            predictionField = FieldMetaInfo(
+                name=inputFieldMeta.name + "." + inferenceLabel,
+                type=inputFieldMeta.type,
+                special=inputFieldMeta.special
+            )
+
+            fieldMetaInfo.append(outputFieldMeta)
+            fieldMetaInfo.append(predictionField)
+
+        return fieldMetaInfo
+
+    def __getDictMetaInfo(self, inferenceElement, inferenceDict):
+        """Get field metadate information for inferences that are of dict type"""
+        fieldMetaInfo = []
+        inferenceLabel = InferenceElement.getLabel(inferenceElement)
 
         if InferenceElement.getInputElement(inferenceElement):
-          self.__outputFieldsMeta.append(FieldMetaInfo(name=inferenceLabel+".actual",
-                type=FieldMetaType.string, special = ''))
-        self.__outputFieldsMeta.append(FieldMetaInfo(name=inferenceLabel,
-                type=FieldMetaType.string, special = ''))
+            fieldMetaInfo.append(FieldMetaInfo(name=inferenceLabel+".actual",
+                                               type=FieldMetaType.string,
+                                               special=''))
 
-    if self.__metricNames:
-      for metricName in self.__metricNames:
-        metricField = FieldMetaInfo(
-          name = metricName,
-          type = FieldMetaType.float,
-          special = FieldMetaSpecial.none)
+        keys = sorted(inferenceDict.keys())
+        for key in keys:
+            fieldMetaInfo.append(FieldMetaInfo(name=inferenceLabel+"."+str(key),
+                                               type=FieldMetaType.string,
+                                               special=''))
 
-        self.__outputFieldsMeta.append(metricField)
+        return fieldMetaInfo
 
-    # Create the inference directory for our experiment
-    inferenceDir = _FileUtils.createExperimentInferenceDir(self.__experimentDir)
+    def append(self, modelResult):
+        """ [virtual method override] Emits a single prediction as input versus
+        predicted.
 
-    # Consctruct the prediction dataset file path
-    filename = (self.__label + "." +
-                opf_utils.InferenceType.getLabel(self.__inferenceType) +
-               ".predictionLog.csv")
-    self.__datasetPath = os.path.join(inferenceDir, filename)
+        modelResult:    An opf_utils.ModelResult object that contains the model input
+                        and output for the current timestep.
+        """
 
-    # Create the output dataset
-    print "OPENING OUTPUT FOR PREDICTION WRITER AT: %r" % self.__datasetPath
-    print "Prediction field-meta: %r" % ([tuple(i) for i in self.__outputFieldsMeta],)
-    self.__dataset = FileRecordStream(streamID=self.__datasetPath, write=True,
-                                     fields=self.__outputFieldsMeta)
+        # print "DEBUG: _BasicPredictionWriter: writing modelResult: %r" % (modelResult,)
 
-    # Copy data from checkpoint cache
-    if self.__checkpointCache is not None:
-      self.__checkpointCache.seek(0)
+        # If there are no inferences, don't write anything
+        inferences = modelResult.inferences
+        hasInferences = False
+        if inferences is not None:
+            for value in inferences.itervalues():
+                hasInferences = hasInferences or (value is not None)
 
-      reader = csv.reader(self.__checkpointCache, dialect='excel')
+        if not hasInferences:
+            return
 
-      # Skip header row
-      try:
-        header = reader.next()
-      except StopIteration:
-        print "Empty record checkpoint initializer for %r" % (self.__datasetPath,)
-      else:
-        assert tuple(self.__dataset.getFieldNames()) == tuple(header), \
-          "dataset.getFieldNames(): %r; predictionCheckpointFieldNames: %r" % (
-          tuple(self.__dataset.getFieldNames()), tuple(header))
+        if self.__dataset is None:
+            self.__openDatafile(modelResult)
 
-      # Copy the rows from checkpoint
-      numRowsCopied = 0
-      while True:
-        try:
-          row = reader.next()
-        except StopIteration:
-          break
+        inputData = modelResult.sensorInput
 
-        #print "DEBUG: restoring row from checkpoint: %r" % (row,)
+        sequenceReset = int(bool(inputData.sequenceReset))
+        outputRow = [sequenceReset]
 
-        self.__dataset.appendRecord(row)
-        numRowsCopied += 1
+        # -----------------------------------------------------------------------
+        # Write out the raw inputs
+        rawInput = modelResult.rawInput
+        for field in self._rawInputNames:
+            outputRow.append(str(rawInput[field]))
 
-      self.__dataset.flush()
+        # -----------------------------------------------------------------------
+        # Write out the inference element info
+        for inferenceElement, outputVal in inferences.iteritems():
+            inputElement = InferenceElement.getInputElement(inferenceElement)
+            if inputElement:
+                inputVal = getattr(inputData, inputElement)
+            else:
+                inputVal = None
 
-      print "Restored %d rows from checkpoint for %r" % (
-        numRowsCopied, self.__datasetPath)
+            if type(outputVal) in (list, tuple):
+                assert type(inputVal) in (list, tuple, None)
 
-      # Dispose of our checkpoint cache
-      self.__checkpointCache.close()
-      self.__checkpointCache = None
+                for iv, ov in zip(inputVal, outputVal):
+                    # Write actual
+                    outputRow.append(str(iv))
 
-    return
+                    # Write inferred
+                    outputRow.append(str(ov))
+            elif isinstance(outputVal, dict):
+                if inputVal is not None:
+                    # If we have a predicted field, include only that in the actuals
+                    if modelResult.predictedFieldName is not None:
+                        outputRow.append(
+                            str(inputVal[modelResult.predictedFieldName]))
+                    else:
+                        outputRow.append(str(inputVal))
+                for key in sorted(outputVal.keys()):
+                    outputRow.append(str(outputVal[key]))
+            else:
+                if inputVal is not None:
+                    outputRow.append(str(inputVal))
+                outputRow.append(str(outputVal))
 
+        metrics = modelResult.metrics
+        for metricName in self.__metricNames:
+            outputRow.append(metrics.get(metricName, 0.0))
 
-  def setLoggedMetrics(self, metricNames):
-    """ Tell the writer which metrics should be written
+        # print "DEBUG: _BasicPredictionWriter: writing outputRow: %r" % (outputRow,)
 
-    Parameters:
-    -----------------------------------------------------------------------
-    metricsNames: A list of metric lables to be written
-    """
-    if metricNames is None:
-      self.__metricNames = set([])
-    else:
-      self.__metricNames = set(metricNames)
+        self.__dataset.appendRecord(outputRow)
 
+        self.__dataset.flush()
 
-  def close(self):
-    """ [virtual method override] Closes the writer (e.g., close the underlying
-    file)
-    """
+        return
 
-    if self.__dataset:
-      self.__dataset.close()
-    self.__dataset = None
+    def checkpoint(self, checkpointSink, maxRows):
+        """ [virtual method override] Save a checkpoint of the prediction output
+        stream. The checkpoint comprises up to maxRows of the most recent inference
+        records.
 
-    return
+        Parameters:
+        ----------------------------------------------------------------------
+        checkpointSink:     A File-like object where predictions checkpoint data, if
+                            any, will be stored.
+        maxRows:            Maximum number of most recent inference rows
+                            to checkpoint.
+        """
 
+        checkpointSink.truncate()
 
-  def __getListMetaInfo(self, inferenceElement):
-    """ Get field metadata information for inferences that are of list type
-    TODO: Right now we assume list inferences are associated with the input field
-    metadata
-    """
-    fieldMetaInfo = []
-    inferenceLabel = InferenceElement.getLabel(inferenceElement)
+        if self.__dataset is None:
+            if self.__checkpointCache is not None:
+                self.__checkpointCache.seek(0)
+                shutil.copyfileobj(self.__checkpointCache, checkpointSink)
+                checkpointSink.flush()
+                return
+            else:
+                # Nothing to checkpoint
+                return
 
-    for inputFieldMeta in self.__inputFieldsMeta:
-      if InferenceElement.getInputElement(inferenceElement):
-        outputFieldMeta = FieldMetaInfo(
-          name=inputFieldMeta.name + ".actual",
-          type=inputFieldMeta.type,
-          special=inputFieldMeta.special
-        )
+        self.__dataset.flush()
+        totalDataRows = self.__dataset.getDataRowCount()
 
-      predictionField = FieldMetaInfo(
-        name=inputFieldMeta.name + "." + inferenceLabel,
-        type=inputFieldMeta.type,
-        special=inputFieldMeta.special
-      )
+        if totalDataRows == 0:
+            # Nothing to checkpoint
+            return
 
-      fieldMetaInfo.append(outputFieldMeta)
-      fieldMetaInfo.append(predictionField)
+        # Open reader of prediction file (suppress missingValues conversion)
+        reader = FileRecordStream(self.__datasetPath, missingValues=[])
 
-    return fieldMetaInfo
+        # Create CSV writer for writing checkpoint rows
+        writer = csv.writer(checkpointSink)
 
+        # Write the header row to checkpoint sink -- just field names
+        writer.writerow(reader.getFieldNames())
 
-  def __getDictMetaInfo(self, inferenceElement, inferenceDict):
-    """Get field metadate information for inferences that are of dict type"""
-    fieldMetaInfo = []
-    inferenceLabel = InferenceElement.getLabel(inferenceElement)
+        # Determine number of rows to checkpoint
+        numToWrite = min(maxRows, totalDataRows)
 
-    if InferenceElement.getInputElement(inferenceElement):
-      fieldMetaInfo.append(FieldMetaInfo(name=inferenceLabel+".actual",
-                                         type=FieldMetaType.string,
-                                         special = ''))
+        # Skip initial rows to get to the rows that we actually need to checkpoint
+        numRowsToSkip = totalDataRows - numToWrite
+        for i in xrange(numRowsToSkip):
+            reader.next()
 
-    keys = sorted(inferenceDict.keys())
-    for key in keys:
-      fieldMetaInfo.append(FieldMetaInfo(name=inferenceLabel+"."+str(key),
-                                         type=FieldMetaType.string,
-                                         special=''))
+        # Write the data rows to checkpoint sink
+        numWritten = 0
+        while True:
+            row = reader.getNextRecord()
+            if row is None:
+                break
 
+            row = [str(element) for element in row]
 
-    return fieldMetaInfo
+            # print "DEBUG: _BasicPredictionWriter: checkpointing row: %r" % (row,)
 
+            writer.writerow(row)
 
-  def append(self, modelResult):
-    """ [virtual method override] Emits a single prediction as input versus
-    predicted.
+            numWritten += 1
 
-    modelResult:    An opf_utils.ModelResult object that contains the model input
-                    and output for the current timestep.
-    """
+        assert numWritten == numToWrite, \
+            "numWritten (%s) != numToWrite (%s)" % (numWritten, numToWrite)
 
-    #print "DEBUG: _BasicPredictionWriter: writing modelResult: %r" % (modelResult,)
-
-    # If there are no inferences, don't write anything
-    inferences = modelResult.inferences
-    hasInferences = False
-    if inferences is not None:
-      for value in inferences.itervalues():
-        hasInferences = hasInferences or (value is not None)
-
-    if not hasInferences:
-      return
-
-    if self.__dataset is None:
-      self.__openDatafile(modelResult)
-
-    inputData = modelResult.sensorInput
-
-    sequenceReset = int(bool(inputData.sequenceReset))
-    outputRow = [sequenceReset]
-
-
-    # -----------------------------------------------------------------------
-    # Write out the raw inputs
-    rawInput = modelResult.rawInput
-    for field in self._rawInputNames:
-      outputRow.append(str(rawInput[field]))
-
-    # -----------------------------------------------------------------------
-    # Write out the inference element info
-    for inferenceElement, outputVal in inferences.iteritems():
-      inputElement = InferenceElement.getInputElement(inferenceElement)
-      if inputElement:
-        inputVal = getattr(inputData, inputElement)
-      else:
-        inputVal = None
-
-      if type(outputVal) in (list, tuple):
-        assert type(inputVal) in (list, tuple, None)
-
-        for iv, ov in zip(inputVal, outputVal):
-          # Write actual
-          outputRow.append(str(iv))
-
-          # Write inferred
-          outputRow.append(str(ov))
-      elif isinstance(outputVal, dict):
-        if inputVal is not None:
-          # If we have a predicted field, include only that in the actuals
-          if modelResult.predictedFieldName is not None:
-            outputRow.append(str(inputVal[modelResult.predictedFieldName]))
-          else:
-            outputRow.append(str(inputVal))
-        for key in sorted(outputVal.keys()):
-          outputRow.append(str(outputVal[key]))
-      else:
-        if inputVal is not None:
-          outputRow.append(str(inputVal))
-        outputRow.append(str(outputVal))
-
-    metrics = modelResult.metrics
-    for metricName in self.__metricNames:
-      outputRow.append(metrics.get(metricName, 0.0))
-
-    #print "DEBUG: _BasicPredictionWriter: writing outputRow: %r" % (outputRow,)
-
-    self.__dataset.appendRecord(outputRow)
-
-    self.__dataset.flush()
-
-    return
-
-  def checkpoint(self, checkpointSink, maxRows):
-    """ [virtual method override] Save a checkpoint of the prediction output
-    stream. The checkpoint comprises up to maxRows of the most recent inference
-    records.
-
-    Parameters:
-    ----------------------------------------------------------------------
-    checkpointSink:     A File-like object where predictions checkpoint data, if
-                        any, will be stored.
-    maxRows:            Maximum number of most recent inference rows
-                        to checkpoint.
-    """
-
-    checkpointSink.truncate()
-
-    if self.__dataset is None:
-      if self.__checkpointCache is not None:
-        self.__checkpointCache.seek(0)
-        shutil.copyfileobj(self.__checkpointCache, checkpointSink)
         checkpointSink.flush()
+
         return
-      else:
-        # Nothing to checkpoint
-        return
-
-    self.__dataset.flush()
-    totalDataRows = self.__dataset.getDataRowCount()
-
-    if totalDataRows == 0:
-      # Nothing to checkpoint
-      return
-
-    # Open reader of prediction file (suppress missingValues conversion)
-    reader = FileRecordStream(self.__datasetPath, missingValues=[])
-
-    # Create CSV writer for writing checkpoint rows
-    writer = csv.writer(checkpointSink)
-
-    # Write the header row to checkpoint sink -- just field names
-    writer.writerow(reader.getFieldNames())
-
-    # Determine number of rows to checkpoint
-    numToWrite = min(maxRows, totalDataRows)
-
-    # Skip initial rows to get to the rows that we actually need to checkpoint
-    numRowsToSkip = totalDataRows - numToWrite
-    for i in xrange(numRowsToSkip):
-      reader.next()
-
-    # Write the data rows to checkpoint sink
-    numWritten = 0
-    while True:
-      row = reader.getNextRecord()
-      if row is None:
-        break;
-
-      row =  [str(element) for element in row]
-
-      #print "DEBUG: _BasicPredictionWriter: checkpointing row: %r" % (row,)
-
-      writer.writerow(row)
-
-      numWritten +=1
-
-    assert numWritten == numToWrite, \
-      "numWritten (%s) != numToWrite (%s)" % (numWritten, numToWrite)
-
-
-    checkpointSink.flush()
-
-    return
-
 
 
 ###############################################################################
@@ -688,258 +661,242 @@ class _BasicPredictionWriter(PredictionWriterIface):
 ###############################################################################
 
 
-
 class NonTemporalPredictionLogAdapter(object):
-  """ This class serves as an adapter for a client-instantiated Non-temporal log
-  writer.
+    """ This class serves as an adapter for a client-instantiated Non-temporal log
+    writer.
 
-  :param writer: (:class:`PredictionWriterIface`) Non-temporal prediction log
-         writer
-  """
-  def __init__(self, writer):
-    self.__writer = writer
-    return
-
-
-  def close(self):
-    self.__writer.close()
-    self.__writer = None
-    return
-
-
-  def update(self, modelResult):
-    """ Emit a input/prediction pair, if possible.
-
-    modelResult:    An opf_utils.ModelResult object that contains the model input
-                    and output for the current timestep.
+    :param writer: (:class:`PredictionWriterIface`) Non-temporal prediction log
+           writer
     """
-    self.__writer.append(modelResult)
-    return
 
+    def __init__(self, writer):
+        self.__writer = writer
+        return
+
+    def close(self):
+        self.__writer.close()
+        self.__writer = None
+        return
+
+    def update(self, modelResult):
+        """ Emit a input/prediction pair, if possible.
+
+        modelResult:    An opf_utils.ModelResult object that contains the model input
+                        and output for the current timestep.
+        """
+        self.__writer.append(modelResult)
+        return
 
 
 class TemporalPredictionLogAdapter(object):
-  """This class serves as an adapter for a client-instantiated Temporal log
-  writer.  It maintains a prediction FIFO for matching T(i+1) input record
-  with T(i=1) prediction for outputting to the log writer.
+    """This class serves as an adapter for a client-instantiated Temporal log
+    writer.  It maintains a prediction FIFO for matching T(i+1) input record
+    with T(i=1) prediction for outputting to the log writer.
 
-  TODO: Right now this is broken
-  """
-  def __init__(self, writer):
-    """
-    writer:       Non-temporal prediction log writer conforming to
-                  PredictionWriterIface interface.
+    TODO: Right now this is broken
     """
 
-    self.__logger = logging.getLogger(".".join(
-      ['com.numenta', self.__class__.__module__, self.__class__.__name__]))
+    def __init__(self, writer):
+        """
+        writer:       Non-temporal prediction log writer conforming to
+                      PredictionWriterIface interface.
+        """
 
-    self.__writer = writer
-    self.__inferenceShifter = InferenceShifter()
-    return
+        self.__logger = logging.getLogger(".".join(
+            ['com.numenta', self.__class__.__module__, self.__class__.__name__]))
 
+        self.__writer = writer
+        self.__inferenceShifter = InferenceShifter()
+        return
 
-  def close(self):
-    self.__writer.close()
-    self.__writer = None
-    return
+    def close(self):
+        self.__writer.close()
+        self.__writer = None
+        return
 
+    def update(self, modelResult):
+        """ Queue up the T(i+1) prediction value and emit a T(i)
+        input/prediction pair, if possible.  E.g., if the previous T(i-1)
+        iteration was learn-only, then we would not have a T(i) prediction in our
+        FIFO and would not be able to emit a meaningful input/prediction
+        pair.
 
-  def update(self, modelResult):
-    """ Queue up the T(i+1) prediction value and emit a T(i)
-    input/prediction pair, if possible.  E.g., if the previous T(i-1)
-    iteration was learn-only, then we would not have a T(i) prediction in our
-    FIFO and would not be able to emit a meaningful input/prediction
-    pair.
-
-    modelResult:    An opf_utils.ModelResult object that contains the model input
-                    and output for the current timestep.
-    """
-    self.__writer.append(self.__inferenceShifter.shift(modelResult))
-
+        modelResult:    An opf_utils.ModelResult object that contains the model input
+                        and output for the current timestep.
+        """
+        self.__writer.append(self.__inferenceShifter.shift(modelResult))
 
 
 class BasicPredictionLogger(opfenv.PredictionLoggerIface):
-  """ This class implements logging of predictions to files as actual vs
-  predicted values.
+    """ This class implements logging of predictions to files as actual vs
+    predicted values.
 
-  :param fields: (list) of :class:`nupic.data.field_meta.FieldMetaInfo` objects
-         representing the encoder-mapped data row field value sequences that
-         will be emitted to this prediction logger.
+    :param fields: (list) of :class:`nupic.data.field_meta.FieldMetaInfo` objects
+           representing the encoder-mapped data row field value sequences that
+           will be emitted to this prediction logger.
 
-  :param experimentDir: (string) experiment directory path that contains
-         description.py
+    :param experimentDir: (string) experiment directory path that contains
+           description.py
 
-  :param label: (string) to incorporate into the filename.
+    :param label: (string) to incorporate into the filename.
 
-  :param checkpointSource: If not None, a File-like object containing the
-         previously-checkpointed predictions for setting the initial contents of
-         this output stream.  Will be copied before returning, if
-         needed.
-  """
+    :param checkpointSource: If not None, a File-like object containing the
+           previously-checkpointed predictions for setting the initial contents of
+           this output stream.  Will be copied before returning, if
+           needed.
+    """
 
-  def __init__(self, fields, experimentDir, label, inferenceType,
-               checkpointSource=None):
-    #assert len(fields) > 0
+    def __init__(self, fields, experimentDir, label, inferenceType,
+                 checkpointSource=None):
+        #assert len(fields) > 0
 
-    self.__reprString = (
-      "%s(fields=%r)" % (
-        self.__class__.__name__, fields))
+        self.__reprString = (
+            "%s(fields=%r)" % (
+                self.__class__.__name__, fields))
 
+        self.__inputFieldsMeta = tuple(copy.deepcopy(fields))
+        self.__experimentDir = experimentDir
+        self.__label = label
+        self.__inferenceType = inferenceType
+        self.__writer = None
 
-    self.__inputFieldsMeta = tuple(copy.deepcopy(fields))
-    self.__experimentDir = experimentDir
-    self.__label = label
-    self.__inferenceType = inferenceType
-    self.__writer = None
+        self.__logAdapter = None
+        self.__loggedMetricNames = None
 
-    self.__logAdapter = None
-    self.__loggedMetricNames = None
-
-    # Save checkpoint data until we're ready to create the output writer
-    self.__checkpointCache = None
-    if checkpointSource is not None:
-      checkpointSource.seek(0)
-      self.__checkpointCache = StringIO.StringIO()
-      shutil.copyfileobj(checkpointSource, self.__checkpointCache)
-
-    return
-
-
-  def __repr__(self):
-    return self.__reprString
-
-
-  def close(self):
-    if self.__logAdapter:
-      self.__logAdapter.close()
-    self.__logAdapter = None
-    return
-
-
-  def writeRecord(self, modelResult):
-    self.writeRecords([modelResult])
-    return
-
-
-  def writeRecords(self, modelResults, progressCB=None):
-    # Instantiate the logger if it doesn't exist yet
-    if self.__logAdapter is None and modelResults:
-      self.__writer = _BasicPredictionWriter(
-                                      experimentDir=self.__experimentDir,
-                                      label=self.__label,
-                                      inferenceType=self.__inferenceType,
-                                      fields=self.__inputFieldsMeta,
-                                      metricNames=self.__loggedMetricNames,
-                                      checkpointSource=self.__checkpointCache)
-
-      # Dispose of our checkpoint cache now
-      if self.__checkpointCache is not None:
-        self.__checkpointCache.close()
+        # Save checkpoint data until we're ready to create the output writer
         self.__checkpointCache = None
+        if checkpointSource is not None:
+            checkpointSource.seek(0)
+            self.__checkpointCache = StringIO.StringIO()
+            shutil.copyfileobj(checkpointSource, self.__checkpointCache)
 
-      if InferenceType.isTemporal(self.__inferenceType):
-        logAdapterClass = TemporalPredictionLogAdapter
-      else:
-        logAdapterClass = NonTemporalPredictionLogAdapter
-
-      self.__logAdapter = logAdapterClass(self.__writer)
-      self.__writer.setLoggedMetrics(self.__loggedMetricNames)
-
-
-    for modelResult in modelResults:
-      if modelResult.inferences is not None:
-        # -----------------------------------------------------------------------
-        # Update the prediction log
-        self.__logAdapter.update(modelResult)
-
-      else:
-        # Handle the learn-only scenario: pass input to existing logAdapters
-        self.__logAdapter.update(modelResult)
-
-    return
-
-  def setLoggedMetrics(self, metricNames):
-    self.__loggedMetricNames = metricNames
-    if self.__writer is not None:
-      self.__writer.setLoggedMetrics(metricNames)
-
-  def checkpoint(self, checkpointSink, maxRows):
-    checkpointSink.truncate()
-
-    if self.__writer is None:
-      if self.__checkpointCache is not None:
-        self.__checkpointCache.seek(0)
-        shutil.copyfileobj(self.__checkpointCache, checkpointSink)
-        checkpointSink.flush()
-        return
-      else:
-        # Nothing to checkpoint
         return
 
-    self.__writer.checkpoint(checkpointSink, maxRows)
-    return
+    def __repr__(self):
+        return self.__reprString
 
+    def close(self):
+        if self.__logAdapter:
+            self.__logAdapter.close()
+        self.__logAdapter = None
+        return
+
+    def writeRecord(self, modelResult):
+        self.writeRecords([modelResult])
+        return
+
+    def writeRecords(self, modelResults, progressCB=None):
+        # Instantiate the logger if it doesn't exist yet
+        if self.__logAdapter is None and modelResults:
+            self.__writer = _BasicPredictionWriter(
+                experimentDir=self.__experimentDir,
+                label=self.__label,
+                inferenceType=self.__inferenceType,
+                fields=self.__inputFieldsMeta,
+                metricNames=self.__loggedMetricNames,
+                checkpointSource=self.__checkpointCache)
+
+            # Dispose of our checkpoint cache now
+            if self.__checkpointCache is not None:
+                self.__checkpointCache.close()
+                self.__checkpointCache = None
+
+            if InferenceType.isTemporal(self.__inferenceType):
+                logAdapterClass = TemporalPredictionLogAdapter
+            else:
+                logAdapterClass = NonTemporalPredictionLogAdapter
+
+            self.__logAdapter = logAdapterClass(self.__writer)
+            self.__writer.setLoggedMetrics(self.__loggedMetricNames)
+
+        for modelResult in modelResults:
+            if modelResult.inferences is not None:
+                # -----------------------------------------------------------------------
+                # Update the prediction log
+                self.__logAdapter.update(modelResult)
+
+            else:
+                # Handle the learn-only scenario: pass input to existing logAdapters
+                self.__logAdapter.update(modelResult)
+
+        return
+
+    def setLoggedMetrics(self, metricNames):
+        self.__loggedMetricNames = metricNames
+        if self.__writer is not None:
+            self.__writer.setLoggedMetrics(metricNames)
+
+    def checkpoint(self, checkpointSink, maxRows):
+        checkpointSink.truncate()
+
+        if self.__writer is None:
+            if self.__checkpointCache is not None:
+                self.__checkpointCache.seek(0)
+                shutil.copyfileobj(self.__checkpointCache, checkpointSink)
+                checkpointSink.flush()
+                return
+            else:
+                # Nothing to checkpoint
+                return
+
+        self.__writer.checkpoint(checkpointSink, maxRows)
+        return
 
 
 class _FileUtils(object):
-  @staticmethod
-  def getExperimentInferenceDirPath(experimentDir):
-    """
-    experimentDir:  experiment directory path that contains description.py
+    @staticmethod
+    def getExperimentInferenceDirPath(experimentDir):
+        """
+        experimentDir:  experiment directory path that contains description.py
 
-    Returns: experiment inference directory path string (the path may not
-              yet exist - see createExperimentInferenceDir())
-    """
-    return os.path.abspath(os.path.join(experimentDir, "inference"))
+        Returns: experiment inference directory path string (the path may not
+                  yet exist - see createExperimentInferenceDir())
+        """
+        return os.path.abspath(os.path.join(experimentDir, "inference"))
 
+    @classmethod
+    def createExperimentInferenceDir(cls, experimentDir):
+        """ Creates the inference output directory for the given experiment
 
-  @classmethod
-  def createExperimentInferenceDir(cls, experimentDir):
-    """ Creates the inference output directory for the given experiment
+        experimentDir:  experiment directory path that contains description.py
 
-    experimentDir:  experiment directory path that contains description.py
+        Returns:  path of the inference output directory
+        """
+        path = cls.getExperimentInferenceDirPath(experimentDir)
 
-    Returns:  path of the inference output directory
-    """
-    path = cls.getExperimentInferenceDirPath(experimentDir)
+        cls.makeDirectory(path)
 
-    cls.makeDirectory(path)
+        return path
 
-    return path
+    @staticmethod
+    def makeDirectory(path):
+        """ Makes directory for the given directory path if it doesn't already exist
+        in the filesystem.  Creates all requested directory segments as needed.
 
+        path:   path of the directory to create.
 
-  @staticmethod
-  def makeDirectory(path):
-    """ Makes directory for the given directory path if it doesn't already exist
-    in the filesystem.  Creates all requested directory segments as needed.
+        Returns:      nothing
+        """
+        # Create the experiment directory
+        # TODO Is default mode (0777) appropriate?
+        try:
+            os.makedirs(path)
+        except OSError as e:
+            if e.errno == os.errno.EEXIST:
+                # print "Experiment directory already exists (that's okay)."
+                pass
+            else:
+                raise
 
-    path:   path of the directory to create.
-
-    Returns:      nothing
-    """
-    # Create the experiment directory
-    # TODO Is default mode (0777) appropriate?
-    try:
-      os.makedirs(path)
-    except OSError as e:
-      if e.errno == os.errno.EEXIST:
-        #print "Experiment directory already exists (that's okay)."
-        pass
-      else:
-        raise
-
-    return
-
+        return
 
 
 def test():
-  #testLogging()
-  return
+    # testLogging()
+    return
 
 
-
-#def testLogging():
+# def testLogging():
 #  dir = os.path.expanduser('~/nupic/trunk/examples/opf/experiments/opfrunexperiment_test/base')
 #  outfile = "test.log"
 #  message = "This is a test message."
@@ -975,6 +932,5 @@ def test():
 #  return
 
 
-
 if __name__ == "__main__":
-  test()
+    test()

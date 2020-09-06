@@ -20,4 +20,3 @@
 # ----------------------------------------------------------------------
 
 from nupic.support.configuration_custom import Configuration
-

@@ -19,6 +19,6 @@
 # http://numenta.org/licenses/
 # ----------------------------------------------------------------------
 
-## @package swarming
+# @package swarming
 # The nupic.swarming package contains Python implementations of
 # Numenta partical swarming algorithms.

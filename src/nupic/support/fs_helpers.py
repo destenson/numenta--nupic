@@ -26,22 +26,21 @@ This module contains file-system helper functions.
 import os
 
 
-
 def makeDirectoryFromAbsolutePath(absDirPath):
-  """ Makes directory for the given directory path with default permissions.
-  If the directory already exists, it is treated as success.
+    """ Makes directory for the given directory path with default permissions.
+    If the directory already exists, it is treated as success.
 
-  :param absDirPath: (string) absolute path of the directory to create.
-  :raises: OSError if directory creation fails
-  :returns: (string) absolute path provided
-  """
+    :param absDirPath: (string) absolute path of the directory to create.
+    :raises: OSError if directory creation fails
+    :returns: (string) absolute path provided
+    """
 
-  assert os.path.isabs(absDirPath)
+    assert os.path.isabs(absDirPath)
 
-  try:
-    os.makedirs(absDirPath)
-  except OSError, e:
-    if e.errno != os.errno.EEXIST:
-      raise
+    try:
+        os.makedirs(absDirPath)
+    except OSError, e:
+        if e.errno != os.errno.EEXIST:
+            raise
 
-  return absDirPath
+    return absDirPath

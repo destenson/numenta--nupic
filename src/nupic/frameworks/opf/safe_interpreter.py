@@ -24,17 +24,14 @@
 import asteval
 
 
-
 class SafeInterpreter(asteval.Interpreter):
 
+    blacklisted_nodes = set(('while', 'for', ))
 
-  blacklisted_nodes = set(('while', 'for', ))
-
-
-  def __init__(self, *args, **kwargs):
-    """Initialize interpreter with blacklisted nodes removed from supported
-    nodes.
-    """
-    self.supported_nodes = tuple(set(self.supported_nodes) -
-                                 self.blacklisted_nodes)
-    asteval.Interpreter.__init__(self, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        """Initialize interpreter with blacklisted nodes removed from supported
+        nodes.
+        """
+        self.supported_nodes = tuple(set(self.supported_nodes) -
+                                     self.blacklisted_nodes)
+        asteval.Interpreter.__init__(self, *args, **kwargs)

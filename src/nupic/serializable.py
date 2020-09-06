@@ -22,101 +22,95 @@
 from abc import ABCMeta, abstractmethod
 
 
-
 class Serializable(object):
-  """
-  Serializable base class establishing
-  :meth:`~nupic.serializable.Serializable.read` and
-  :meth:`~nupic.serializable.Serializable.write` abstract methods,
-  :meth:`.readFromFile` and :meth:`.writeToFile` concrete methods to support
-  serialization with Cap'n Proto.
-  """
-
-  __metaclass__ = ABCMeta
-
-
-  @classmethod
-  @abstractmethod
-  def getSchema(cls):
     """
-    Get Cap'n Proto schema.
-
-    ..warning: This is an abstract method.  Per abc protocol, attempts to subclass
-               without overriding will fail.
-
-    @returns Cap'n Proto schema
+    Serializable base class establishing
+    :meth:`~nupic.serializable.Serializable.read` and
+    :meth:`~nupic.serializable.Serializable.write` abstract methods,
+    :meth:`.readFromFile` and :meth:`.writeToFile` concrete methods to support
+    serialization with Cap'n Proto.
     """
-    pass
 
+    __metaclass__ = ABCMeta
 
-  @classmethod
-  @abstractmethod
-  def read(cls, proto):
-    """
-    Create a new object initialized from Cap'n Proto obj.
+    @classmethod
+    @abstractmethod
+    def getSchema(cls):
+        """
+        Get Cap'n Proto schema.
 
-    Note: This is an abstract method.  Per abc protocol, attempts to subclass
-    without overriding will fail.
+        ..warning: This is an abstract method.  Per abc protocol, attempts to subclass
+                   without overriding will fail.
 
-    :param proto: Cap'n Proto obj
-    :return: Obj initialized from proto
-    """
-    pass
+        @returns Cap'n Proto schema
+        """
+        pass
 
+    @classmethod
+    @abstractmethod
+    def read(cls, proto):
+        """
+        Create a new object initialized from Cap'n Proto obj.
 
-  @abstractmethod
-  def write(self, proto):
-    """
-    Write obj instance to Cap'n Proto object
+        Note: This is an abstract method.  Per abc protocol, attempts to subclass
+        without overriding will fail.
 
-    .. warning: This is an abstract method.  Per abc protocol, attempts to
-                subclass without overriding will fail.
+        :param proto: Cap'n Proto obj
+        :return: Obj initialized from proto
+        """
+        pass
 
-    :param proto: Cap'n Proto obj
-    """
-    pass
+    @abstractmethod
+    def write(self, proto):
+        """
+        Write obj instance to Cap'n Proto object
 
+        .. warning: This is an abstract method.  Per abc protocol, attempts to
+                    subclass without overriding will fail.
 
-  @classmethod
-  def readFromFile(cls, f, packed=True):
-    """
-    Read serialized object from file.
+        :param proto: Cap'n Proto obj
+        """
+        pass
 
-    :param f: input file
-    :param packed: If true, will assume content is packed
-    :return: first-class instance initialized from proto obj
-    """
-    # Get capnproto schema from instance
-    schema = cls.getSchema()
+    @classmethod
+    def readFromFile(cls, f, packed=True):
+        """
+        Read serialized object from file.
 
-    # Read from file
-    if packed:
-      proto = schema.read_packed(f)
-    else:
-      proto = schema.read(f)
+        :param f: input file
+        :param packed: If true, will assume content is packed
+        :return: first-class instance initialized from proto obj
+        """
+        # Get capnproto schema from instance
+        schema = cls.getSchema()
 
-    # Return first-class instance initialized from proto obj
-    return cls.read(proto)
+        # Read from file
+        if packed:
+            proto = schema.read_packed(f)
+        else:
+            proto = schema.read(f)
 
+        # Return first-class instance initialized from proto obj
+        return cls.read(proto)
 
-  def writeToFile(self, f, packed=True):
-    """
-    Write serialized object to file.
+    def writeToFile(self, f, packed=True):
+        """
+        Write serialized object to file.
 
-    :param f: output file
-    :param packed: If true, will pack contents.
-    """
-    # Get capnproto schema from instance
-    schema = self.getSchema()
+        :param f: output file
+        :param packed: If true, will pack contents.
+        """
+        # Get capnproto schema from instance
+        schema = self.getSchema()
 
-    # Construct new message, otherwise refered to as `proto`
-    proto = schema.new_message()
+        # Construct new message, otherwise refered to as `proto`
+        proto = schema.new_message()
 
-    # Populate message w/ `write()` instance method
-    self.write(proto)
+        # Populate message w/ `write()` instance method
+        self.write(proto)
 
-    # Finally, write to file
-    if packed:
-      proto.write_packed(f)
-    else:
-      proto.write(f)
+        # Finally, write to file
+        if packed:
+            proto.write_packed(f)
+        else:
+            proto.write(f)

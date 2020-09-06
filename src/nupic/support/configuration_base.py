@@ -41,373 +41,357 @@ CUSTOM_CONFIG = "nupic-custom.xml"
 
 
 def _getLogger():
-  logger = logging.getLogger("com.numenta.nupic.tools.configuration_base")
-  if DEBUG:
-    logger.setLevel(logging.DEBUG)
-  return logger
-
+    logger = logging.getLogger("com.numenta.nupic.tools.configuration_base")
+    if DEBUG:
+        logger.setLevel(logging.DEBUG)
+    return logger
 
 
 class Configuration(object):
-  """ This class can be used to fetch NuPic configuration settings which are
-  stored in one or more XML files.
+    """ This class can be used to fetch NuPic configuration settings which are
+    stored in one or more XML files.
 
-  If the environment variable ``NTA_CONF_PATH`` is defined, then the
-  configuration files are expected to be in the ``NTA_CONF_PATH`` search path,
-  which is a ':' separated list of directories (on Windows the separator is a
-  ';'). If ``NTA_CONF_PATH`` is not defined, then it is loaded via
-  pkg_resources.
-  """
-
-  # Once we read in the properties, they are stored in this dict
-  _properties = None
-
-  # This stores the paths we search for config files. It can be modified through
-  # the setConfigPaths() method.
-  _configPaths = None
-
-  # Any environment variable prefixed with this string serves as an override
-  #  to property defined in the current configuration
-  envPropPrefix = 'NTA_CONF_PROP_'
-
-
-  @classmethod
-  def getString(cls, prop):
-    """ Retrieve the requested property as a string. If property does not exist,
-    then KeyError will be raised.
-
-    :param prop: (string) name of the property
-    :raises: KeyError
-    :returns: (string) property value
-    """
-    if cls._properties is None:
-      cls._readStdConfigFiles()
-
-    # Allow configuration properties to be overridden via environment variables
-    envValue = os.environ.get("%s%s" % (cls.envPropPrefix,
-                                        prop.replace('.', '_')), None)
-    if envValue is not None:
-      return envValue
-
-    return cls._properties[prop]
-
-
-  @classmethod
-  def getBool(cls, prop):
-    """ Retrieve the requested property and return it as a bool. If property
-    does not exist, then KeyError will be raised. If the property value is
-    neither 0 nor 1, then ValueError will be raised
-
-    :param prop: (string) name of the property
-    :raises: KeyError, ValueError
-    :returns: (bool) property value
+    If the environment variable ``NTA_CONF_PATH`` is defined, then the
+    configuration files are expected to be in the ``NTA_CONF_PATH`` search path,
+    which is a ':' separated list of directories (on Windows the separator is a
+    ';'). If ``NTA_CONF_PATH`` is not defined, then it is loaded via
+    pkg_resources.
     """
 
-    value = cls.getInt(prop)
+    # Once we read in the properties, they are stored in this dict
+    _properties = None
 
-    if value not in (0, 1):
-      raise ValueError("Expected 0 or 1, but got %r in config property %s" % (
-        value, prop))
+    # This stores the paths we search for config files. It can be modified through
+    # the setConfigPaths() method.
+    _configPaths = None
 
-    return bool(value)
+    # Any environment variable prefixed with this string serves as an override
+    #  to property defined in the current configuration
+    envPropPrefix = 'NTA_CONF_PROP_'
 
+    @classmethod
+    def getString(cls, prop):
+        """ Retrieve the requested property as a string. If property does not exist,
+        then KeyError will be raised.
 
-  @classmethod
-  def getInt(cls, prop):
-    """ Retrieve the requested property and return it as an int. If property
-    does not exist, then KeyError will be raised.
+        :param prop: (string) name of the property
+        :raises: KeyError
+        :returns: (string) property value
+        """
+        if cls._properties is None:
+            cls._readStdConfigFiles()
 
-    :param prop: (string) name of the property
-    :returns: (int) property value
-    """
+        # Allow configuration properties to be overridden via environment variables
+        envValue = os.environ.get("%s%s" % (cls.envPropPrefix,
+                                            prop.replace('.', '_')), None)
+        if envValue is not None:
+            return envValue
 
-    return int(cls.getString(prop))
+        return cls._properties[prop]
 
+    @classmethod
+    def getBool(cls, prop):
+        """ Retrieve the requested property and return it as a bool. If property
+        does not exist, then KeyError will be raised. If the property value is
+        neither 0 nor 1, then ValueError will be raised
 
-  @classmethod
-  def getFloat(cls, prop):
-    """ Retrieve the requested property and return it as a float. If property
-    does not exist, then KeyError will be raised.
+        :param prop: (string) name of the property
+        :raises: KeyError, ValueError
+        :returns: (bool) property value
+        """
 
-    :param prop: (string) name of the property
-    :returns: (float) property value
-    """
+        value = cls.getInt(prop)
 
-    return float(cls.getString(prop))
+        if value not in (0, 1):
+            raise ValueError("Expected 0 or 1, but got %r in config property %s" % (
+                value, prop))
 
+        return bool(value)
 
-  @classmethod
-  def get(cls, prop, default=None):
-    """ Get the value of the given configuration property as string. This
-    returns a string which is the property value, or the value of "default" arg.
-    If the property is not found, use :meth:`getString` instead.
+    @classmethod
+    def getInt(cls, prop):
+        """ Retrieve the requested property and return it as an int. If property
+        does not exist, then KeyError will be raised.
 
-    .. note:: it's atypical for our configuration properties to be missing - a
-     missing configuration property is usually a very serious error. Because
-     of this, it's preferable to use one of the :meth:`getString`,
-     :meth:`getInt`, :meth:`getFloat`, etc. variants instead of :meth:`get`.
-     Those variants will raise KeyError when an expected property is missing.
+        :param prop: (string) name of the property
+        :returns: (int) property value
+        """
 
-    :param prop: (string) name of the property
-    :param default: default value to return if property does not exist
-    :returns: (string) property value, or default if the property does not exist
-    """
+        return int(cls.getString(prop))
 
-    try:
-      return cls.getString(prop)
-    except KeyError:
-      return default
+    @classmethod
+    def getFloat(cls, prop):
+        """ Retrieve the requested property and return it as a float. If property
+        does not exist, then KeyError will be raised.
 
+        :param prop: (string) name of the property
+        :returns: (float) property value
+        """
 
-  @classmethod
-  def set(cls, prop, value):
-    """ Set the value of the given configuration property.
+        return float(cls.getString(prop))
 
-    :param prop: (string) name of the property
-    :param value: (object) value to set
-    """
+    @classmethod
+    def get(cls, prop, default=None):
+        """ Get the value of the given configuration property as string. This
+        returns a string which is the property value, or the value of "default" arg.
+        If the property is not found, use :meth:`getString` instead.
 
-    if cls._properties is None:
-      cls._readStdConfigFiles()
+        .. note:: it's atypical for our configuration properties to be missing - a
+         missing configuration property is usually a very serious error. Because
+         of this, it's preferable to use one of the :meth:`getString`,
+         :meth:`getInt`, :meth:`getFloat`, etc. variants instead of :meth:`get`.
+         Those variants will raise KeyError when an expected property is missing.
 
-    cls._properties[prop] = str(value)
+        :param prop: (string) name of the property
+        :param default: default value to return if property does not exist
+        :returns: (string) property value, or default if the property does not exist
+        """
 
-
-  @classmethod
-  def dict(cls):
-    """ Return a dict containing all of the configuration properties
-
-    :returns: (dict) containing all configuration properties.
-    """
-
-    if cls._properties is None:
-      cls._readStdConfigFiles()
-
-    # Make a copy so we can update any current values obtained from environment
-    #  variables
-    result = dict(cls._properties)
-    keys = os.environ.keys()
-    replaceKeys = filter(lambda x: x.startswith(cls.envPropPrefix),
-                         keys)
-    for envKey in replaceKeys:
-      key = envKey[len(cls.envPropPrefix):]
-      key = key.replace('_', '.')
-      result[key] = os.environ[envKey]
-
-    return result
-
-
-  @classmethod
-  def readConfigFile(cls, filename, path=None):
-    """ Parse the given XML file and store all properties it describes.
-
-    :param filename: (string) name of XML file to parse (no path)
-    :param path: (string) path of the XML file. If None, then use the standard
-                  configuration search path.
-    """
-    properties = cls._readConfigFile(filename, path)
-
-    # Create properties dict if necessary
-    if cls._properties is None:
-      cls._properties = dict()
-
-    for name in properties:
-      if 'value' in properties[name]:
-        cls._properties[name] = properties[name]['value']
-
-
-  @classmethod
-  def _readConfigFile(cls, filename, path=None):
-    """ Parse the given XML file and return a dict describing the file.
-
-    :param filename: (string) name of XML file to parse (no path)
-    :param path: (string) path of the XML file. If None, then use the standard
-           configuration search path.
-    :returns: (dict) with each property as a key and a dict of all the
-           property's attributes as value
-    """
-
-    outputProperties = dict()
-
-    # Get the path to the config files.
-    if path is None:
-      filePath = cls.findConfigFile(filename)
-    else:
-      filePath = os.path.join(path, filename)
-
-
-    # ------------------------------------------------------------------
-    # Read in the config file
-    try:
-      if filePath is not None:
         try:
-          # Use warn since console log level is set to warning
-          _getLogger().debug("Loading config file: %s", filePath)
-          with open(filePath, 'r') as inp:
-            contents = inp.read()
-        except Exception:
-          raise RuntimeError("Expected configuration file at %s" % filePath)
-      else:
-        # If the file was not found in the normal search paths, which includes
-        # checking the NTA_CONF_PATH, we'll try loading it from pkg_resources.
-        try:
-          contents = resource_string("nupic.support", filename)
-        except Exception as resourceException:
-          # We expect these to be read, and if they don't exist we'll just use
-          # an empty configuration string.
-          if filename in [USER_CONFIG, CUSTOM_CONFIG]:
-            contents = '<configuration/>'
-          else:
-            raise resourceException
+            return cls.getString(prop)
+        except KeyError:
+            return default
 
-      elements = ElementTree.XML(contents)
+    @classmethod
+    def set(cls, prop, value):
+        """ Set the value of the given configuration property.
 
-      if elements.tag != 'configuration':
-        raise RuntimeError("Expected top-level element to be 'configuration' "
-                           "but got '%s'" % (elements.tag))
+        :param prop: (string) name of the property
+        :param value: (object) value to set
+        """
 
-      # ------------------------------------------------------------------
-      # Add in each property found
-      propertyElements = elements.findall('./property')
+        if cls._properties is None:
+            cls._readStdConfigFiles()
 
-      for propertyItem in propertyElements:
+        cls._properties[prop] = str(value)
 
-        propInfo = dict()
+    @classmethod
+    def dict(cls):
+        """ Return a dict containing all of the configuration properties
 
-        # Parse this property element
-        propertyAttributes = list(propertyItem)
-        for propertyAttribute in propertyAttributes:
-          propInfo[propertyAttribute.tag] = propertyAttribute.text
+        :returns: (dict) containing all configuration properties.
+        """
 
-        # Get the name
-        name = propInfo.get('name', None)
+        if cls._properties is None:
+            cls._readStdConfigFiles()
 
-        # value is allowed to be empty string
-        if 'value' in propInfo and propInfo['value'] is None:
-          value = ''
+        # Make a copy so we can update any current values obtained from environment
+        #  variables
+        result = dict(cls._properties)
+        keys = os.environ.keys()
+        replaceKeys = filter(lambda x: x.startswith(cls.envPropPrefix),
+                             keys)
+        for envKey in replaceKeys:
+            key = envKey[len(cls.envPropPrefix):]
+            key = key.replace('_', '.')
+            result[key] = os.environ[envKey]
+
+        return result
+
+    @classmethod
+    def readConfigFile(cls, filename, path=None):
+        """ Parse the given XML file and store all properties it describes.
+
+        :param filename: (string) name of XML file to parse (no path)
+        :param path: (string) path of the XML file. If None, then use the standard
+                      configuration search path.
+        """
+        properties = cls._readConfigFile(filename, path)
+
+        # Create properties dict if necessary
+        if cls._properties is None:
+            cls._properties = dict()
+
+        for name in properties:
+            if 'value' in properties[name]:
+                cls._properties[name] = properties[name]['value']
+
+    @classmethod
+    def _readConfigFile(cls, filename, path=None):
+        """ Parse the given XML file and return a dict describing the file.
+
+        :param filename: (string) name of XML file to parse (no path)
+        :param path: (string) path of the XML file. If None, then use the standard
+               configuration search path.
+        :returns: (dict) with each property as a key and a dict of all the
+               property's attributes as value
+        """
+
+        outputProperties = dict()
+
+        # Get the path to the config files.
+        if path is None:
+            filePath = cls.findConfigFile(filename)
         else:
-          value = propInfo.get('value', None)
+            filePath = os.path.join(path, filename)
 
-          if value is None:
-            if 'novalue' in propInfo:
-              # Placeholder "novalue" properties are intended to be overridden
-              # via dynamic configuration or another configuration layer.
-              continue
+        # ------------------------------------------------------------------
+        # Read in the config file
+        try:
+            if filePath is not None:
+                try:
+                    # Use warn since console log level is set to warning
+                    _getLogger().debug("Loading config file: %s", filePath)
+                    with open(filePath, 'r') as inp:
+                        contents = inp.read()
+                except Exception:
+                    raise RuntimeError(
+                        "Expected configuration file at %s" % filePath)
             else:
-              raise RuntimeError("Missing 'value' element within the property "
-                                 "element: => %s " % (str(propInfo)))
+                # If the file was not found in the normal search paths, which includes
+                # checking the NTA_CONF_PATH, we'll try loading it from pkg_resources.
+                try:
+                    contents = resource_string("nupic.support", filename)
+                except Exception as resourceException:
+                    # We expect these to be read, and if they don't exist we'll just use
+                    # an empty configuration string.
+                    if filename in [USER_CONFIG, CUSTOM_CONFIG]:
+                        contents = '<configuration/>'
+                    else:
+                        raise resourceException
 
-        # The value is allowed to contain substitution tags of the form
-        # ${env.VARNAME}, which should be substituted with the corresponding
-        # environment variable values
-        restOfValue = value
-        value = ''
-        while True:
-          # Find the beginning of substitution tag
-          pos = restOfValue.find('${env.')
-          if pos == -1:
-            # No more environment variable substitutions
-            value += restOfValue
-            break
+            elements = ElementTree.XML(contents)
 
-          # Append prefix to value accumulator
-          value += restOfValue[0:pos]
+            if elements.tag != 'configuration':
+                raise RuntimeError("Expected top-level element to be 'configuration' "
+                                   "but got '%s'" % (elements.tag))
 
-          # Find the end of current substitution tag
-          varTailPos = restOfValue.find('}', pos)
-          if varTailPos == -1:
-            raise RuntimeError("Trailing environment variable tag delimiter '}'"
-                               " not found in %r" % (restOfValue))
+            # ------------------------------------------------------------------
+            # Add in each property found
+            propertyElements = elements.findall('./property')
 
-          # Extract environment variable name from tag
-          varname = restOfValue[pos+6:varTailPos]
-          if varname not in os.environ:
-            raise RuntimeError("Attempting to use the value of the environment"
-                               " variable %r, which is not defined" % (varname))
-          envVarValue = os.environ[varname]
+            for propertyItem in propertyElements:
 
-          value += envVarValue
+                propInfo = dict()
 
-          restOfValue = restOfValue[varTailPos+1:]
+                # Parse this property element
+                propertyAttributes = list(propertyItem)
+                for propertyAttribute in propertyAttributes:
+                    propInfo[propertyAttribute.tag] = propertyAttribute.text
 
+                # Get the name
+                name = propInfo.get('name', None)
 
-        # Check for errors
-        if name is None:
-          raise RuntimeError("Missing 'name' element within following property "
-                             "element:\n => %s " % (str(propInfo)))
+                # value is allowed to be empty string
+                if 'value' in propInfo and propInfo['value'] is None:
+                    value = ''
+                else:
+                    value = propInfo.get('value', None)
 
-        propInfo['value'] = value
-        outputProperties[name] = propInfo
+                    if value is None:
+                        if 'novalue' in propInfo:
+                            # Placeholder "novalue" properties are intended to be overridden
+                            # via dynamic configuration or another configuration layer.
+                            continue
+                        else:
+                            raise RuntimeError("Missing 'value' element within the property "
+                                               "element: => %s " % (str(propInfo)))
 
-      return outputProperties
-    except Exception:
-      _getLogger().exception("Error while parsing configuration file: %s.",
-        filePath)
-      raise
+                # The value is allowed to contain substitution tags of the form
+                # ${env.VARNAME}, which should be substituted with the corresponding
+                # environment variable values
+                restOfValue = value
+                value = ''
+                while True:
+                    # Find the beginning of substitution tag
+                    pos = restOfValue.find('${env.')
+                    if pos == -1:
+                        # No more environment variable substitutions
+                        value += restOfValue
+                        break
 
+                    # Append prefix to value accumulator
+                    value += restOfValue[0:pos]
 
-  @classmethod
-  def clear(cls):
-    """ Clear out the entire configuration.
-    """
+                    # Find the end of current substitution tag
+                    varTailPos = restOfValue.find('}', pos)
+                    if varTailPos == -1:
+                        raise RuntimeError("Trailing environment variable tag delimiter '}'"
+                                           " not found in %r" % (restOfValue))
 
-    cls._properties = None
-    cls._configPaths = None
+                    # Extract environment variable name from tag
+                    varname = restOfValue[pos+6:varTailPos]
+                    if varname not in os.environ:
+                        raise RuntimeError("Attempting to use the value of the environment"
+                                           " variable %r, which is not defined" % (varname))
+                    envVarValue = os.environ[varname]
 
+                    value += envVarValue
 
-  @classmethod
-  def findConfigFile(cls, filename):
-    """ Search the configuration path (specified via the NTA_CONF_PATH
-    environment variable) for the given filename. If found, return the complete
-    path to the file.
+                    restOfValue = restOfValue[varTailPos+1:]
 
-    :param filename: (string) name of file to locate
-    """
+                # Check for errors
+                if name is None:
+                    raise RuntimeError("Missing 'name' element within following property "
+                                       "element:\n => %s " % (str(propInfo)))
 
-    paths = cls.getConfigPaths()
-    for p in paths:
-      testPath = os.path.join(p, filename)
-      if os.path.isfile(testPath):
-        return os.path.join(p, filename)
+                propInfo['value'] = value
+                outputProperties[name] = propInfo
 
+            return outputProperties
+        except Exception:
+            _getLogger().exception("Error while parsing configuration file: %s.",
+                                   filePath)
+            raise
 
-  @classmethod
-  def getConfigPaths(cls):
-    """ Return the list of paths to search for configuration files.
+    @classmethod
+    def clear(cls):
+        """ Clear out the entire configuration.
+        """
 
-    :returns: (list) of paths
-    """
-    configPaths = []
-    if cls._configPaths is not None:
-      return cls._configPaths
+        cls._properties = None
+        cls._configPaths = None
 
-    else:
-      if 'NTA_CONF_PATH' in os.environ:
-        configVar = os.environ['NTA_CONF_PATH']
-        # Return as a list of paths
-        configPaths = configVar.split(os.pathsep)
+    @classmethod
+    def findConfigFile(cls, filename):
+        """ Search the configuration path (specified via the NTA_CONF_PATH
+        environment variable) for the given filename. If found, return the complete
+        path to the file.
 
-      return configPaths
+        :param filename: (string) name of file to locate
+        """
 
+        paths = cls.getConfigPaths()
+        for p in paths:
+            testPath = os.path.join(p, filename)
+            if os.path.isfile(testPath):
+                return os.path.join(p, filename)
 
-  @classmethod
-  def setConfigPaths(cls, paths):
-    """ Modify the paths we use to search for configuration files.
+    @classmethod
+    def getConfigPaths(cls):
+        """ Return the list of paths to search for configuration files.
 
-    :param paths: (list) of paths to search for config files.
-    """
+        :returns: (list) of paths
+        """
+        configPaths = []
+        if cls._configPaths is not None:
+            return cls._configPaths
 
-    cls._configPaths = list(paths)
+        else:
+            if 'NTA_CONF_PATH' in os.environ:
+                configVar = os.environ['NTA_CONF_PATH']
+                # Return as a list of paths
+                configPaths = configVar.split(os.pathsep)
 
+            return configPaths
 
-  @classmethod
-  def _readStdConfigFiles(cls):
-    """ Read in all standard configuration files
+    @classmethod
+    def setConfigPaths(cls, paths):
+        """ Modify the paths we use to search for configuration files.
 
-    """
+        :param paths: (list) of paths to search for config files.
+        """
 
-    # Default one first
-    cls.readConfigFile(DEFAULT_CONFIG)
+        cls._configPaths = list(paths)
 
-    # Site specific one can override properties defined in default
-    cls.readConfigFile(USER_CONFIG)
+    @classmethod
+    def _readStdConfigFiles(cls):
+        """ Read in all standard configuration files
+
+        """
+
+        # Default one first
+        cls.readConfigFile(DEFAULT_CONFIG)
+
+        # Site specific one can override properties defined in default
+        cls.readConfigFile(USER_CONFIG)

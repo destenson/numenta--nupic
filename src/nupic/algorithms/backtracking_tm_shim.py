@@ -28,286 +28,272 @@ import numpy
 from nupic.bindings.algorithms import TemporalMemory as TemporalMemoryCPP
 
 from nupic.algorithms.monitor_mixin.temporal_memory_monitor_mixin import (
-  TemporalMemoryMonitorMixin)
+    TemporalMemoryMonitorMixin)
 from nupic.algorithms.temporal_memory import TemporalMemory
 
 
 class MonitoredTemporalMemory(TemporalMemoryMonitorMixin,
                               TemporalMemory):
-  def __init__(self, *args, **kwargs):
-    TemporalMemoryMonitorMixin.__init__(self, *args, **kwargs)
-    TemporalMemory.__init__(self, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        TemporalMemoryMonitorMixin.__init__(self, *args, **kwargs)
+        TemporalMemory.__init__(self, *args, **kwargs)
 
-  @classmethod
-  def read(cls, proto):
-    """
-    Intercepts TemporalMemory deserialization request in order to initialize
-    `TemporalMemoryMonitorMixin` state
+    @classmethod
+    def read(cls, proto):
+        """
+        Intercepts TemporalMemory deserialization request in order to initialize
+        `TemporalMemoryMonitorMixin` state
 
-    @param proto (DynamicStructBuilder) Proto object
+        @param proto (DynamicStructBuilder) Proto object
 
-    @return (TemporalMemory) TemporalMemory shim instance
-    """
-    tm = super(TemporalMemoryMonitorMixin, cls).read(proto)
+        @return (TemporalMemory) TemporalMemory shim instance
+        """
+        tm = super(TemporalMemoryMonitorMixin, cls).read(proto)
 
-    # initialize `TemporalMemoryMonitorMixin` attributes
-    tm.mmName = None
-    tm._mmTraces = None
-    tm._mmData = None
-    tm.mmClearHistory()
-    tm._mmResetActive = True
-    return tm
-
+        # initialize `TemporalMemoryMonitorMixin` attributes
+        tm.mmName = None
+        tm._mmTraces = None
+        tm._mmData = None
+        tm.mmClearHistory()
+        tm._mmResetActive = True
+        return tm
 
 
 class TMShimMixin(object):
-  """
-  TM => Temporal Memory shim class.
-  """
-  def __init__(self,
-               numberOfCols=500,
-               cellsPerColumn=10,
-               initialPerm=0.11,
-               connectedPerm=0.50,
-               minThreshold=8,
-               newSynapseCount=15,
-               permanenceInc=0.10,
-               permanenceDec=0.10,
-               permanenceMax=1.0,
-               activationThreshold=12,
-               predictedSegmentDecrement=0.0,
-               maxSegmentsPerCell=255,
-               maxSynapsesPerSegment=255,
-               globalDecay=0.10,
-               maxAge=100000,
-               pamLength=1,
-               verbosity=0,
-               outputType="normal",
-               seed=42):
     """
-    Translate parameters and initialize member variables specific to `backtracking_tm.py`.
+    TM => Temporal Memory shim class.
     """
-    super(TMShimMixin, self).__init__(
-      columnDimensions=(numberOfCols,),
-      cellsPerColumn=cellsPerColumn,
-      activationThreshold=activationThreshold,
-      initialPermanence=initialPerm,
-      connectedPermanence=connectedPerm,
-      minThreshold=minThreshold,
-      maxNewSynapseCount=newSynapseCount,
-      permanenceIncrement=permanenceInc,
-      permanenceDecrement=permanenceDec,
-      predictedSegmentDecrement=predictedSegmentDecrement,
-      maxSegmentsPerCell=maxSegmentsPerCell,
-      maxSynapsesPerSegment=maxSynapsesPerSegment,
-      seed=seed)
 
-    self.infActiveState = {"t": None}
+    def __init__(self,
+                 numberOfCols=500,
+                 cellsPerColumn=10,
+                 initialPerm=0.11,
+                 connectedPerm=0.50,
+                 minThreshold=8,
+                 newSynapseCount=15,
+                 permanenceInc=0.10,
+                 permanenceDec=0.10,
+                 permanenceMax=1.0,
+                 activationThreshold=12,
+                 predictedSegmentDecrement=0.0,
+                 maxSegmentsPerCell=255,
+                 maxSynapsesPerSegment=255,
+                 globalDecay=0.10,
+                 maxAge=100000,
+                 pamLength=1,
+                 verbosity=0,
+                 outputType="normal",
+                 seed=42):
+        """
+        Translate parameters and initialize member variables specific to `backtracking_tm.py`.
+        """
+        super(TMShimMixin, self).__init__(
+            columnDimensions=(numberOfCols,),
+            cellsPerColumn=cellsPerColumn,
+            activationThreshold=activationThreshold,
+            initialPermanence=initialPerm,
+            connectedPermanence=connectedPerm,
+            minThreshold=minThreshold,
+            maxNewSynapseCount=newSynapseCount,
+            permanenceIncrement=permanenceInc,
+            permanenceDecrement=permanenceDec,
+            predictedSegmentDecrement=predictedSegmentDecrement,
+            maxSegmentsPerCell=maxSegmentsPerCell,
+            maxSynapsesPerSegment=maxSynapsesPerSegment,
+            seed=seed)
 
+        self.infActiveState = {"t": None}
 
-  @classmethod
-  def read(cls, proto):
-    """
-    Intercepts TemporalMemory deserialization request in order to initialize
-    `self.infActiveState`
+    @classmethod
+    def read(cls, proto):
+        """
+        Intercepts TemporalMemory deserialization request in order to initialize
+        `self.infActiveState`
 
-    @param proto (DynamicStructBuilder) Proto object
+        @param proto (DynamicStructBuilder) Proto object
 
-    @return (TemporalMemory) TemporalMemory shim instance
-    """
-    tm = super(TMShimMixin, cls).read(proto)
-    tm.infActiveState = {"t": None}
-    return tm
+        @return (TemporalMemory) TemporalMemory shim instance
+        """
+        tm = super(TMShimMixin, cls).read(proto)
+        tm.infActiveState = {"t": None}
+        return tm
 
+    def compute(self, bottomUpInput, enableLearn, computeInfOutput=None):
+        """
+        (From `backtracking_tm.py`)
+        Handle one compute, possibly learning.
 
-  def compute(self, bottomUpInput, enableLearn, computeInfOutput=None):
-    """
-    (From `backtracking_tm.py`)
-    Handle one compute, possibly learning.
+        @param bottomUpInput     The bottom-up input, typically from a spatial pooler
+        @param enableLearn       If true, perform learning
+        @param computeInfOutput  If None, default behavior is to disable the inference
+                                 output when enableLearn is on.
+                                 If true, compute the inference output
+                                 If false, do not compute the inference output
+        """
+        super(TMShimMixin, self).compute(set(bottomUpInput.nonzero()[0]),
+                                         learn=enableLearn)
+        numberOfCells = self.numberOfCells()
 
-    @param bottomUpInput     The bottom-up input, typically from a spatial pooler
-    @param enableLearn       If true, perform learning
-    @param computeInfOutput  If None, default behavior is to disable the inference
-                             output when enableLearn is on.
-                             If true, compute the inference output
-                             If false, do not compute the inference output
-    """
-    super(TMShimMixin, self).compute(set(bottomUpInput.nonzero()[0]),
-                                     learn=enableLearn)
-    numberOfCells = self.numberOfCells()
+        activeState = numpy.zeros(numberOfCells)
+        activeState[self.getActiveCells()] = 1
+        self.infActiveState["t"] = activeState
 
-    activeState = numpy.zeros(numberOfCells)
-    activeState[self.getActiveCells()] = 1
-    self.infActiveState["t"] = activeState
+        output = numpy.zeros(numberOfCells)
 
-    output = numpy.zeros(numberOfCells)
+        output[self.getPredictiveCells()] = 1
+        output[self.getActiveCells()] = 1
+        return output
 
-    output[self.getPredictiveCells()] = 1
-    output[self.getActiveCells()] = 1
-    return output
+    def topDownCompute(self, topDownIn=None):
+        """
+        (From `backtracking_tm.py`)
+        Top-down compute - generate expected input given output of the TM
 
+        @param topDownIn top down input from the level above us
 
-  def topDownCompute(self, topDownIn=None):
-    """
-    (From `backtracking_tm.py`)
-    Top-down compute - generate expected input given output of the TM
+        @returns best estimate of the TM input that would have generated bottomUpOut.
+        """
+        output = numpy.zeros(self.numberOfColumns())
+        columns = [self.columnForCell(idx)
+                   for idx in self.getPredictiveCells()]
+        output[columns] = 1
+        return output
 
-    @param topDownIn top down input from the level above us
+    def getActiveState(self):
+        activeState = numpy.zeros(self.numberOfCells())
+        activeState[self.getActiveCells()] = 1
+        return activeState
 
-    @returns best estimate of the TM input that would have generated bottomUpOut.
-    """
-    output = numpy.zeros(self.numberOfColumns())
-    columns = [self.columnForCell(idx) for idx in self.getPredictiveCells()]
-    output[columns] = 1
-    return output
+    def getPredictedState(self):
+        predictedState = numpy.zeros(self.numberOfCells())
+        predictedState[self.getPredictiveCells()] = 1
+        return predictedState
 
-
-  def getActiveState(self):
-    activeState = numpy.zeros(self.numberOfCells())
-    activeState[self.getActiveCells()] = 1
-    return activeState
-
-
-  def getPredictedState(self):
-    predictedState = numpy.zeros(self.numberOfCells())
-    predictedState[self.getPredictiveCells()] = 1
-    return predictedState
-
-
-  def getLearnActiveStateT(self):
-    state = numpy.zeros([self.numberOfColumns(), self.getCellsPerColumn()])
-    return state
-
+    def getLearnActiveStateT(self):
+        state = numpy.zeros([self.numberOfColumns(), self.getCellsPerColumn()])
+        return state
 
 
 class TMShim(TMShimMixin, TemporalMemory):
-  pass
-
+    pass
 
 
 class TMCPPShim(TMShimMixin, TemporalMemoryCPP):
-  pass
-
+    pass
 
 
 class MonitoredTMShim(MonitoredTemporalMemory):
-  """
-  TM => Monitored Temporal Memory shim class.
-
-  TODO: This class is not very DRY. This whole file needs to be replaced by a
-  pure TemporalMemory region
-  (WIP at https://github.com/numenta/nupic.research/pull/247).
-  """
-  def __init__(self,
-               numberOfCols=500,
-               cellsPerColumn=10,
-               initialPerm=0.11,
-               connectedPerm=0.50,
-               minThreshold=8,
-               newSynapseCount=15,
-               permanenceInc=0.10,
-               permanenceDec=0.10,
-               permanenceMax=1.0,
-               activationThreshold=12,
-               predictedSegmentDecrement=0.0,
-               maxSegmentsPerCell=255,
-               maxSynapsesPerSegment=255,
-               globalDecay=0.10,
-               maxAge=100000,
-               pamLength=1,
-               verbosity=0,
-               outputType="normal",
-               seed=42):
     """
-    Translate parameters and initialize member variables specific to `backtracking_tm.py`.
+    TM => Monitored Temporal Memory shim class.
+
+    TODO: This class is not very DRY. This whole file needs to be replaced by a
+    pure TemporalMemory region
+    (WIP at https://github.com/numenta/nupic.research/pull/247).
     """
-    super(MonitoredTMShim, self).__init__(
-      columnDimensions=(numberOfCols,),
-      cellsPerColumn=cellsPerColumn,
-      activationThreshold=activationThreshold,
-      initialPermanence=initialPerm,
-      connectedPermanence=connectedPerm,
-      minThreshold=minThreshold,
-      maxNewSynapseCount=newSynapseCount,
-      permanenceIncrement=permanenceInc,
-      permanenceDecrement=permanenceDec,
-      predictedSegmentDecrement=predictedSegmentDecrement,
-      maxSegmentsPerCell=maxSegmentsPerCell,
-      maxSynapsesPerSegment=maxSynapsesPerSegment,
-      seed=seed)
 
-    self.infActiveState = {"t": None}
+    def __init__(self,
+                 numberOfCols=500,
+                 cellsPerColumn=10,
+                 initialPerm=0.11,
+                 connectedPerm=0.50,
+                 minThreshold=8,
+                 newSynapseCount=15,
+                 permanenceInc=0.10,
+                 permanenceDec=0.10,
+                 permanenceMax=1.0,
+                 activationThreshold=12,
+                 predictedSegmentDecrement=0.0,
+                 maxSegmentsPerCell=255,
+                 maxSynapsesPerSegment=255,
+                 globalDecay=0.10,
+                 maxAge=100000,
+                 pamLength=1,
+                 verbosity=0,
+                 outputType="normal",
+                 seed=42):
+        """
+        Translate parameters and initialize member variables specific to `backtracking_tm.py`.
+        """
+        super(MonitoredTMShim, self).__init__(
+            columnDimensions=(numberOfCols,),
+            cellsPerColumn=cellsPerColumn,
+            activationThreshold=activationThreshold,
+            initialPermanence=initialPerm,
+            connectedPermanence=connectedPerm,
+            minThreshold=minThreshold,
+            maxNewSynapseCount=newSynapseCount,
+            permanenceIncrement=permanenceInc,
+            permanenceDecrement=permanenceDec,
+            predictedSegmentDecrement=predictedSegmentDecrement,
+            maxSegmentsPerCell=maxSegmentsPerCell,
+            maxSynapsesPerSegment=maxSynapsesPerSegment,
+            seed=seed)
 
-  @classmethod
-  def read(cls, proto):
-    """
-    Intercepts TemporalMemory deserialization request in order to initialize
-    `self.infActiveState`
+        self.infActiveState = {"t": None}
 
-    @param proto (DynamicStructBuilder) Proto object
+    @classmethod
+    def read(cls, proto):
+        """
+        Intercepts TemporalMemory deserialization request in order to initialize
+        `self.infActiveState`
 
-    @return (TemporalMemory) TemporalMemory shim instance
-    """
-    tm = super(MonitoredTMShim, cls).read(proto)
-    tm.infActiveState = {"t": None}
-    return tm
+        @param proto (DynamicStructBuilder) Proto object
 
+        @return (TemporalMemory) TemporalMemory shim instance
+        """
+        tm = super(MonitoredTMShim, cls).read(proto)
+        tm.infActiveState = {"t": None}
+        return tm
 
-  def compute(self, bottomUpInput, enableLearn, computeInfOutput=None):
-    """
-    (From `backtracking_tm.py`)
-    Handle one compute, possibly learning.
+    def compute(self, bottomUpInput, enableLearn, computeInfOutput=None):
+        """
+        (From `backtracking_tm.py`)
+        Handle one compute, possibly learning.
 
-    @param bottomUpInput     The bottom-up input, typically from a spatial pooler
-    @param enableLearn       If true, perform learning
-    @param computeInfOutput  If None, default behavior is to disable the inference
-                             output when enableLearn is on.
-                             If true, compute the inference output
-                             If false, do not compute the inference output
-    """
-    super(MonitoredTMShim, self).compute(set(bottomUpInput.nonzero()[0]),
-                                         learn=enableLearn)
-    numberOfCells = self.numberOfCells()
+        @param bottomUpInput     The bottom-up input, typically from a spatial pooler
+        @param enableLearn       If true, perform learning
+        @param computeInfOutput  If None, default behavior is to disable the inference
+                                 output when enableLearn is on.
+                                 If true, compute the inference output
+                                 If false, do not compute the inference output
+        """
+        super(MonitoredTMShim, self).compute(set(bottomUpInput.nonzero()[0]),
+                                             learn=enableLearn)
+        numberOfCells = self.numberOfCells()
 
-    activeState = numpy.zeros(numberOfCells)
-    activeState[self.getActiveCells()] = 1
-    self.infActiveState["t"] = activeState
+        activeState = numpy.zeros(numberOfCells)
+        activeState[self.getActiveCells()] = 1
+        self.infActiveState["t"] = activeState
 
-    output = numpy.zeros(numberOfCells)
-    output[self.getPredictiveCells() + self.getActiveCells()] = 1
-    return output
+        output = numpy.zeros(numberOfCells)
+        output[self.getPredictiveCells() + self.getActiveCells()] = 1
+        return output
 
+    def topDownCompute(self, topDownIn=None):
+        """
+        (From `backtracking_tm.py`)
+        Top-down compute - generate expected input given output of the TM
 
-  def topDownCompute(self, topDownIn=None):
-    """
-    (From `backtracking_tm.py`)
-    Top-down compute - generate expected input given output of the TM
+        @param topDownIn top down input from the level above us
 
-    @param topDownIn top down input from the level above us
+        @returns best estimate of the TM input that would have generated bottomUpOut.
+        """
+        output = numpy.zeros(self.numberOfColumns())
+        columns = [self.columnForCell(idx)
+                   for idx in self.getPredictiveCells()]
+        output[columns] = 1
+        return output
 
-    @returns best estimate of the TM input that would have generated bottomUpOut.
-    """
-    output = numpy.zeros(self.numberOfColumns())
-    columns = [self.columnForCell(idx) for idx in self.getPredictiveCells()]
-    output[columns] = 1
-    return output
+    def getActiveState(self):
+        activeState = numpy.zeros(self.numberOfCells())
+        activeState[self.getActiveCells()] = 1
+        return activeState
 
+    def getPredictedState(self):
+        predictedState = numpy.zeros(self.numberOfCells())
+        predictedState[self.getPredictiveCells()] = 1
+        return predictedState
 
-  def getActiveState(self):
-    activeState = numpy.zeros(self.numberOfCells())
-    activeState[self.getActiveCells()] = 1
-    return activeState
-
-
-  def getPredictedState(self):
-    predictedState = numpy.zeros(self.numberOfCells())
-    predictedState[self.getPredictiveCells()] = 1
-    return predictedState
-
-
-  def getLearnActiveStateT(self):
-    state = numpy.zeros([self.numberOfColumns(), self.cellsPerColumn])
-    return state
-
-
-
+    def getLearnActiveStateT(self):
+        state = numpy.zeros([self.numberOfColumns(), self.cellsPerColumn])
+        return state

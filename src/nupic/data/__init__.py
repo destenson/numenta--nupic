@@ -27,6 +27,5 @@ TextFileSource - can read delimited text files (e.g. CSV files)
 StandardSource - can read a binary file of marshaled Python objects
 """
 
-SENTINEL_VALUE_FOR_MISSING_DATA = None
-
 from function_source import FunctionSource
+SENTINEL_VALUE_FOR_MISSING_DATA = None

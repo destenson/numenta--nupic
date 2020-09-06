@@ -39,7 +39,6 @@ metrics.py file:
 import numpy as np
 
 
-
 def ROCCurve(y_true, y_score):
     """compute Receiver operating characteristic (ROC)
 
@@ -136,7 +135,6 @@ def ROCCurve(y_true, y_score):
     return fpr, tpr, thresholds
 
 
-
 def AreaUnderCurve(x, y):
     """Compute Area Under the Curve (AUC) using the trapezoidal rule
 
@@ -183,95 +181,91 @@ def AreaUnderCurve(x, y):
     return area
 
 
-
 def _printNPArray(x, precision=2):
-  format = "%%.%df" % (precision)
-  for elem in x:
-    print format % (elem),
-  print
-
+    format = "%%.%df" % (precision)
+    for elem in x:
+        print format % (elem),
+    print
 
 
 def _test():
-  """
-  This is a toy example, to show the basic functionality:
+    """
+    This is a toy example, to show the basic functionality:
 
-  The dataset is:
+    The dataset is:
 
-  actual    prediction
-  -------------------------
-  0          0.1
-  0          0.4
-  1          0.5
-  1          0.3
-  1          0.45
+    actual    prediction
+    -------------------------
+    0          0.1
+    0          0.4
+    1          0.5
+    1          0.3
+    1          0.45
 
-  Some ROC terminology:
-  A True Positive (TP) is when we predict TRUE and the actual value is 1.
+    Some ROC terminology:
+    A True Positive (TP) is when we predict TRUE and the actual value is 1.
 
-  A False Positive (FP) is when we predict TRUE, but the actual value is 0.
+    A False Positive (FP) is when we predict TRUE, but the actual value is 0.
 
-  The True Positive Rate (TPR) is TP/P, where P is the total number of actual
-  positives (3 in this example, the last 3 samples).
+    The True Positive Rate (TPR) is TP/P, where P is the total number of actual
+    positives (3 in this example, the last 3 samples).
 
-  The False Positive Rate (FPR) is FP/N, where N is the total number of actual
-  negatives (2 in this example, the first 2 samples)
-
-
-  Here are the classifications at various choices for the threshold. The
-  prediction is TRUE if the predicted value is >= threshold and FALSE otherwise.
-
-  actual    pred      0.50    0.45    0.40    0.30    0.10
-  ---------------------------------------------------------
-  0          0.1      0        0      0        0      1
-  0          0.4      0        0      1        1      1
-  1          0.5      1        1      1        1      1
-  1          0.3      0        0      0        1      1
-  1          0.45     0        1      1        1      1
-
-  TruePos(TP)         1        2      2        3      3
-  FalsePos(FP)        0        0      1        1      2
-  TruePosRate(TPR)    1/3      2/3    2/3      3/3    3/3
-  FalsePosRate(FPR)   0/2      0/2    1/2      1/2    2/2
+    The False Positive Rate (FPR) is FP/N, where N is the total number of actual
+    negatives (2 in this example, the first 2 samples)
 
 
-  The ROC curve is a plot of FPR on the x-axis and TPR on the y-axis. Basically,
-  one can pick any operating point along this curve to run, the operating point
-  determined by which threshold you want to use. By changing the threshold, you
-  tradeoff TP's for FPs.
+    Here are the classifications at various choices for the threshold. The
+    prediction is TRUE if the predicted value is >= threshold and FALSE otherwise.
 
-  The more area under this curve, the better the classification algorithm is.
-  The AreaUnderCurve() function can be used to compute the area under this
-  curve.
+    actual    pred      0.50    0.45    0.40    0.30    0.10
+    ---------------------------------------------------------
+    0          0.1      0        0      0        0      1
+    0          0.4      0        0      1        1      1
+    1          0.5      1        1      1        1      1
+    1          0.3      0        0      0        1      1
+    1          0.45     0        1      1        1      1
 
-  """
-
-  yTrue = np.array([0, 0, 1, 1, 1])
-  yScore = np.array([0.1, 0.4, 0.5, 0.3, 0.45])
-  (fpr, tpr, thresholds) = ROCCurve(yTrue, yScore)
-
-  print "Actual:    ",
-  _printNPArray(yTrue)
-
-  print "Predicted: ",
-  _printNPArray(yScore)
-  print
-
-  print "Thresholds:",
-  _printNPArray(thresholds[::-1])
-
-  print "FPR(x):    ",
-  _printNPArray(fpr)
-
-  print "TPR(y):    ",
-  _printNPArray(tpr)
+    TruePos(TP)         1        2      2        3      3
+    FalsePos(FP)        0        0      1        1      2
+    TruePosRate(TPR)    1/3      2/3    2/3      3/3    3/3
+    FalsePosRate(FPR)   0/2      0/2    1/2      1/2    2/2
 
 
-  print
-  area = AreaUnderCurve(fpr, tpr)
-  print "AUC: ", area
+    The ROC curve is a plot of FPR on the x-axis and TPR on the y-axis. Basically,
+    one can pick any operating point along this curve to run, the operating point
+    determined by which threshold you want to use. By changing the threshold, you
+    tradeoff TP's for FPs.
+
+    The more area under this curve, the better the classification algorithm is.
+    The AreaUnderCurve() function can be used to compute the area under this
+    curve.
+
+    """
+
+    yTrue = np.array([0, 0, 1, 1, 1])
+    yScore = np.array([0.1, 0.4, 0.5, 0.3, 0.45])
+    (fpr, tpr, thresholds) = ROCCurve(yTrue, yScore)
+
+    print "Actual:    ",
+    _printNPArray(yTrue)
+
+    print "Predicted: ",
+    _printNPArray(yScore)
+    print
+
+    print "Thresholds:",
+    _printNPArray(thresholds[::-1])
+
+    print "FPR(x):    ",
+    _printNPArray(fpr)
+
+    print "TPR(y):    ",
+    _printNPArray(tpr)
+
+    print
+    area = AreaUnderCurve(fpr, tpr)
+    print "AUC: ", area
 
 
-
-if __name__=='__main__':
-  _test()
+if __name__ == '__main__':
+    _test()

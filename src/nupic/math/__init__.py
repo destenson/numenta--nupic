@@ -25,7 +25,7 @@ statistical data structures and simple algorithms.
 """
 
 import sys
-import math as coremath # The core Python module.
+import math as coremath  # The core Python module.
 
 # bitstringToArray/CMultiArgMax are not part of NuPIC2
 from nupic.bindings.math import (GetNTAReal,
@@ -34,11 +34,13 @@ from nupic.bindings.math import (GetNTAReal,
                                  TensorIndex, Domain)
 from nupic.bindings.math import lgamma, erf
 
+
 def choose(n, c):
-  return int(round(coremath.exp(logChoose(n, c))))
+    return int(round(coremath.exp(logChoose(n, c))))
+
 
 def logChoose(n, c):
-  return lgamma(n+1) - lgamma(c+1) - lgamma(n-c+1)
+    return lgamma(n+1) - lgamma(c+1) - lgamma(n-c+1)
 
 
 # __all__ affects what symbols match "*"
@@ -50,4 +52,4 @@ __all__ = [
 
 
 __all__.extend(["CMultiArgMax", "bitstringToArray",
-    "pickByDistribution", "ConditionalProbabilityTable2D", "MultiIndicator", "Indicator"])
+                "pickByDistribution", "ConditionalProbabilityTable2D", "MultiIndicator", "Indicator"])

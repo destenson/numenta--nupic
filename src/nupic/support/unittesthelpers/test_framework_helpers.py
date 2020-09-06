@@ -36,30 +36,30 @@ import pytest
 
 
 def tagTest(tag, comment=None):
-  """ A decorator for tagging a test class or test method with the given tag
-  string
+    """ A decorator for tagging a test class or test method with the given tag
+    string
 
-  tag: test tag string
-  comment: reason for the tag; string; optional
+    tag: test tag string
+    comment: reason for the tag; string; optional
 
-  Examples:
+    Examples:
 
-  @tagTest("slowTests", "takes a long time to execute")
-  class ClusterTests(TestCase):
-    def testSwarmWithAggregation(self):
-      pass
+    @tagTest("slowTests", "takes a long time to execute")
+    class ClusterTests(TestCase):
+      def testSwarmWithAggregation(self):
+        pass
 
-    def testSwarmWithoutAggregation(self):
-      pass
+      def testSwarmWithoutAggregation(self):
+        pass
 
-  or
+    or
 
-  class MiscTests(TestCase):
-    def testOnePlusOne(self):
-      pass
+    class MiscTests(TestCase):
+      def testOnePlusOne(self):
+        pass
 
-    @tagTest("slowTests")
-    def testSwarm(self):
-      pass
-  """
-  return getattr(pytest.mark, tag)
+      @tagTest("slowTests")
+      def testSwarm(self):
+        pass
+    """
+    return getattr(pytest.mark, tag)

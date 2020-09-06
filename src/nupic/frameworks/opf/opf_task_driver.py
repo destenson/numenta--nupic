@@ -50,344 +50,330 @@ The TaskDriver is a simple state machine that:
 """
 
 from abc import (
-  ABCMeta,
-  abstractmethod)
+    ABCMeta,
+    abstractmethod)
 from collections import defaultdict
 import itertools
 import logging
 
 from prediction_metrics_manager import (
-  MetricsManager,
-  )
-
+    MetricsManager,
+)
 
 
 class IterationPhaseSpecLearnOnly(object):
-  """ This class represents the Learn-only phase of the Iteration Cycle in
-  the TaskControl block of description.py
+    """ This class represents the Learn-only phase of the Iteration Cycle in
+    the TaskControl block of description.py
 
-  :param nIters: (int) iterations to remain in this phase. An iteration
-                 corresponds to a single :meth:`OPFTaskDriver.handleInputRecord`
-                 call.
-  """
-
-  def __init__(self, nIters):
-    assert nIters > 0, "nIter=%s" % nIters
-
-    self.__nIters = nIters
-    return
-
-  def __repr__(self):
-    s = "%s(nIters=%r)" % (self.__class__.__name__, self.__nIters)
-    return s
-
-
-  def _getImpl(self, model):
-    """ Creates and returns the _IterationPhase-based instance corresponding
-    to this phase specification
-
-    model:          Model instance
+    :param nIters: (int) iterations to remain in this phase. An iteration
+                   corresponds to a single :meth:`OPFTaskDriver.handleInputRecord`
+                   call.
     """
-    impl = _IterationPhaseLearnOnly(model=model,
-                                    nIters=self.__nIters)
-    return impl
+
+    def __init__(self, nIters):
+        assert nIters > 0, "nIter=%s" % nIters
+
+        self.__nIters = nIters
+        return
+
+    def __repr__(self):
+        s = "%s(nIters=%r)" % (self.__class__.__name__, self.__nIters)
+        return s
+
+    def _getImpl(self, model):
+        """ Creates and returns the _IterationPhase-based instance corresponding
+        to this phase specification
+
+        model:          Model instance
+        """
+        impl = _IterationPhaseLearnOnly(model=model,
+                                        nIters=self.__nIters)
+        return impl
 
 
 class IterationPhaseSpecInferOnly(object):
-  """ This class represents the Infer-only phase of the Iteration Cycle in
-  the TaskControl block of description.py
+    """ This class represents the Infer-only phase of the Iteration Cycle in
+    the TaskControl block of description.py
 
-  :param nIters: (int) Number of iterations to remain in this phase. An
-         iteration corresponds to a single
-         :meth:`OPFTaskDriver.handleInputRecord` call.
-  :param inferenceArgs: (dict) A dictionary of arguments required for inference.
-         These depend on the
-         :class:`~nupic.frameworks.opf.opf_utils.InferenceType` of the current
-         model.
-  """
-
-  def __init__(self, nIters, inferenceArgs=None):
-    assert nIters > 0, "nIters=%s" % nIters
-
-    self.__nIters = nIters
-    self.__inferenceArgs = inferenceArgs
-    return
-
-  def __repr__(self):
-    s = "%s(nIters=%r)" % (self.__class__.__name__, self.__nIters)
-    return s
-
-  def _getImpl(self, model):
-    """ Creates and returns the _IterationPhase-based instance corresponding
-    to this phase specification
-
-    model:          Model instance
+    :param nIters: (int) Number of iterations to remain in this phase. An
+           iteration corresponds to a single
+           :meth:`OPFTaskDriver.handleInputRecord` call.
+    :param inferenceArgs: (dict) A dictionary of arguments required for inference.
+           These depend on the
+           :class:`~nupic.frameworks.opf.opf_utils.InferenceType` of the current
+           model.
     """
-    impl = _IterationPhaseInferOnly(model=model,
-                                    nIters=self.__nIters,
-                                    inferenceArgs=self.__inferenceArgs)
-    return impl
+
+    def __init__(self, nIters, inferenceArgs=None):
+        assert nIters > 0, "nIters=%s" % nIters
+
+        self.__nIters = nIters
+        self.__inferenceArgs = inferenceArgs
+        return
+
+    def __repr__(self):
+        s = "%s(nIters=%r)" % (self.__class__.__name__, self.__nIters)
+        return s
+
+    def _getImpl(self, model):
+        """ Creates and returns the _IterationPhase-based instance corresponding
+        to this phase specification
+
+        model:          Model instance
+        """
+        impl = _IterationPhaseInferOnly(model=model,
+                                        nIters=self.__nIters,
+                                        inferenceArgs=self.__inferenceArgs)
+        return impl
 
 
 class IterationPhaseSpecLearnAndInfer(object):
-  """ This class represents the Learn-and-Infer phase of the Iteration Cycle in
-  the TaskControl block of description.py
+    """ This class represents the Learn-and-Infer phase of the Iteration Cycle in
+    the TaskControl block of description.py
 
-  :param nIters: (int) Number of iterations to remain in this phase. An
-         iteration corresponds to a single
-         :meth:`OPFTaskDriver.handleInputRecord` call.
-  :param inferenceArgs: (dict) A dictionary of arguments required for inference.
-         These depend on the
-         :class:`~nupic.frameworks.opf.opf_utils.InferenceType` of the current
-         model.
-  """
-
-  def __init__(self, nIters, inferenceArgs=None):
-    assert nIters > 0, "nIters=%s" % nIters
-
-    self.__nIters = nIters
-    self.__inferenceArgs = inferenceArgs
-    return
-
-  def __repr__(self):
-    s = "%s(nIters=%r)" % (self.__class__.__name__, self.__nIters)
-    return s
-
-  def _getImpl(self, model):
-    """ Creates and returns the _IterationPhase-based instance corresponding
-    to this phase specification
-
-    model:          Model instance
+    :param nIters: (int) Number of iterations to remain in this phase. An
+           iteration corresponds to a single
+           :meth:`OPFTaskDriver.handleInputRecord` call.
+    :param inferenceArgs: (dict) A dictionary of arguments required for inference.
+           These depend on the
+           :class:`~nupic.frameworks.opf.opf_utils.InferenceType` of the current
+           model.
     """
-    impl = _IterationPhaseLearnAndInfer(model=model,
-                                        nIters=self.__nIters,
-                                        inferenceArgs=self.__inferenceArgs)
-    return impl
 
+    def __init__(self, nIters, inferenceArgs=None):
+        assert nIters > 0, "nIters=%s" % nIters
+
+        self.__nIters = nIters
+        self.__inferenceArgs = inferenceArgs
+        return
+
+    def __repr__(self):
+        s = "%s(nIters=%r)" % (self.__class__.__name__, self.__nIters)
+        return s
+
+    def _getImpl(self, model):
+        """ Creates and returns the _IterationPhase-based instance corresponding
+        to this phase specification
+
+        model:          Model instance
+        """
+        impl = _IterationPhaseLearnAndInfer(model=model,
+                                            nIters=self.__nIters,
+                                            inferenceArgs=self.__inferenceArgs)
+        return impl
 
 
 class OPFTaskDriver(object):
-  """
-  Task Phase Driver implementation
+    """
+    Task Phase Driver implementation
 
-  Conceptually, the client injects input records, one at a time, into
-  an OPFTaskDriver instance for execution according to the
-  current IterationPhase as maintained by the OPFTaskDriver instance.
+    Conceptually, the client injects input records, one at a time, into
+    an OPFTaskDriver instance for execution according to the
+    current IterationPhase as maintained by the OPFTaskDriver instance.
 
-  :param taskControl: (dict) conforming to opfTaskControlSchema.json that
-         defines the actions to be performed on the given model.
+    :param taskControl: (dict) conforming to opfTaskControlSchema.json that
+           defines the actions to be performed on the given model.
 
-  :param model: (:class:`nupic.frameworks.opf.model.Model`) that this
-         OPFTaskDriver instance will drive.
-  """
+    :param model: (:class:`nupic.frameworks.opf.model.Model`) that this
+           OPFTaskDriver instance will drive.
+    """
 
-  def __init__(self, taskControl, model):
-    #validateOpfJsonValue(taskControl, "opfTaskControlSchema.json")
+    def __init__(self, taskControl, model):
+        #validateOpfJsonValue(taskControl, "opfTaskControlSchema.json")
 
+        self.__reprstr = ("%s(" +
+                          "taskControl=%r, " +
+                          "model=%r)") % \
+            (self.__class__.__name__,
+             taskControl,
+             model)
 
-    self.__reprstr = ("%s(" + \
-                      "taskControl=%r, " + \
-                      "model=%r)") % \
+        # Init logging
+        #
+        self.logger = logging.getLogger(".".join(
+            ['com.numenta', self.__class__.__module__, self.__class__.__name__]))
+
+        self.logger.debug(("Instantiating %s; %r.") %
                           (self.__class__.__name__,
-                           taskControl,
-                           model)
+                           self.__reprstr))
 
-    # Init logging
-    #
-    self.logger = logging.getLogger(".".join(
-      ['com.numenta', self.__class__.__module__, self.__class__.__name__]))
+        # -----------------------------------------------------------------------
+        # Save args of interest
+        #
+        self.__taskControl = taskControl
+        self.__model = model
 
-    self.logger.debug(("Instantiating %s; %r.") % \
-                        (self.__class__.__name__,
-                         self.__reprstr))
+        # -----------------------------------------------------------------------
+        # Create Metrics Manager.
+        #
+        self.__metricsMgr = None
+        metrics = taskControl.get('metrics', None)
+        self.__metricsMgr = MetricsManager(metricSpecs=metrics,
+                                           inferenceType=model.getInferenceType(),
+                                           fieldInfo=model.getFieldInfo())
 
-    # -----------------------------------------------------------------------
-    # Save args of interest
-    #
-    self.__taskControl = taskControl
-    self.__model = model
+        # -----------------------------------------------------------------------
+        # Figure out which metrics should be logged
+        #
 
-    # -----------------------------------------------------------------------
-    # Create Metrics Manager.
-    #
-    self.__metricsMgr = None
-    metrics = taskControl.get('metrics', None)
-    self.__metricsMgr = MetricsManager(metricSpecs=metrics,
-                                       inferenceType=model.getInferenceType(),
-                                       fieldInfo=model.getFieldInfo())
+        # The logged metrics won't within the current task
+        self.__loggedMetricLabels = set([])
 
-    # -----------------------------------------------------------------------
-    # Figure out which metrics should be logged
-    #
+        loggedMetricPatterns = taskControl.get('loggedMetrics', None)
 
-    # The logged metrics won't within the current task
-    self.__loggedMetricLabels = set([])
+        # -----------------------------------------------------------------------
+        # Create our phase manager
+        #
+        self.__phaseManager = _PhaseManager(
+            model=model,
+            phaseSpecs=taskControl.get('iterationCycle', []))
 
-    loggedMetricPatterns =  taskControl.get('loggedMetrics', None)
+        # -----------------------------------------------------------------------
+        # Initialize the callbacks container
+        #
+        self.__userCallbacks = defaultdict(
+            list, taskControl.get('callbacks', {}))
 
-    # -----------------------------------------------------------------------
-    # Create our phase manager
-    #
-    self.__phaseManager = _PhaseManager(
-      model=model,
-      phaseSpecs=taskControl.get('iterationCycle', []))
+        return
 
-    # -----------------------------------------------------------------------
-    # Initialize the callbacks container
-    #
-    self.__userCallbacks = defaultdict(list, taskControl.get('callbacks', {}))
+    def __repr__(self):
+        return self.__reprstr
 
-    return
+    def replaceIterationCycle(self, phaseSpecs):
+        """ Replaces the Iteration Cycle phases
 
+        :param phaseSpecs: Iteration cycle description consisting of a sequence of
+                      IterationPhaseSpecXXXXX elements that are performed in the
+                      given order
+        """
 
-  def __repr__(self):
-    return self.__reprstr
+        # -----------------------------------------------------------------------
+        # Replace our phase manager
+        #
+        self.__phaseManager = _PhaseManager(
+            model=self.__model,
+            phaseSpecs=phaseSpecs)
 
+        return
 
-  def replaceIterationCycle(self, phaseSpecs):
-    """ Replaces the Iteration Cycle phases
+    def setup(self):
+        """ Performs initial setup activities, including 'setup' callbacks. This
+        method MUST be called once before the first call to
+        :meth:`handleInputRecord`.
+        """
+        # Execute task-setup callbacks
+        for cb in self.__userCallbacks['setup']:
+            cb(self.__model)
 
-    :param phaseSpecs: Iteration cycle description consisting of a sequence of
-                  IterationPhaseSpecXXXXX elements that are performed in the
-                  given order
-    """
+        return
 
-    # -----------------------------------------------------------------------
-    # Replace our phase manager
-    #
-    self.__phaseManager = _PhaseManager(
-      model=self.__model,
-      phaseSpecs=phaseSpecs)
+    def finalize(self):
+        """ Perform final activities, including 'finish' callbacks. This
+        method MUST be called once after the last call to :meth:`handleInputRecord`.
+        """
+        # Execute task-finish callbacks
+        for cb in self.__userCallbacks['finish']:
+            cb(self.__model)
 
-    return
+        return
 
+    def handleInputRecord(self, inputRecord):
+        """
+        Processes the given record according to the current iteration cycle phase
 
-  def setup(self):
-    """ Performs initial setup activities, including 'setup' callbacks. This
-    method MUST be called once before the first call to
-    :meth:`handleInputRecord`.
-    """
-    # Execute task-setup callbacks
-    for cb in self.__userCallbacks['setup']:
-      cb(self.__model)
+        :param inputRecord: (object) record expected to be returned from
+               :meth:`nupic.data.record_stream.RecordStreamIface.getNextRecord`.
 
-    return
+        :returns: :class:`nupic.frameworks.opf.opf_utils.ModelResult`
+        """
+        assert inputRecord, "Invalid inputRecord: %r" % inputRecord
 
+        results = self.__phaseManager.handleInputRecord(inputRecord)
+        metrics = self.__metricsMgr.update(results)
 
-  def finalize(self):
-    """ Perform final activities, including 'finish' callbacks. This
-    method MUST be called once after the last call to :meth:`handleInputRecord`.
-    """
-    # Execute task-finish callbacks
-    for cb in self.__userCallbacks['finish']:
-      cb(self.__model)
+        # Execute task-postIter callbacks
+        for cb in self.__userCallbacks['postIter']:
+            cb(self.__model)
 
-    return
+        results.metrics = metrics
 
+        # Return the input and predictions for this record
+        return results
 
-  def handleInputRecord(self, inputRecord):
-    """
-    Processes the given record according to the current iteration cycle phase
+    def getMetrics(self):
+        """ Gets the current metric values
 
-    :param inputRecord: (object) record expected to be returned from
-           :meth:`nupic.data.record_stream.RecordStreamIface.getNextRecord`.
+        :returns: A dictionary of metric values. The key for each entry is the label
+                  for the metric spec, as generated by
+                  :meth:`nupic.frameworks.opf.metrics.MetricSpec.getLabel`. The
+                  value for each entry is a dictionary containing the value of the
+                  metric as returned by
+                  :meth:`nupic.frameworks.opf.metrics.MetricsIface.getMetric`.
+        """
+        return self.__metricsMgr.getMetrics()
 
-    :returns: :class:`nupic.frameworks.opf.opf_utils.ModelResult`
-    """
-    assert inputRecord, "Invalid inputRecord: %r" % inputRecord
-
-    results = self.__phaseManager.handleInputRecord(inputRecord)
-    metrics = self.__metricsMgr.update(results)
-
-    # Execute task-postIter callbacks
-    for cb in self.__userCallbacks['postIter']:
-      cb(self.__model)
-
-    results.metrics = metrics
-
-    # Return the input and predictions for this record
-    return results
-
-
-  def getMetrics(self):
-    """ Gets the current metric values
-
-    :returns: A dictionary of metric values. The key for each entry is the label
-              for the metric spec, as generated by
-              :meth:`nupic.frameworks.opf.metrics.MetricSpec.getLabel`. The
-              value for each entry is a dictionary containing the value of the
-              metric as returned by
-              :meth:`nupic.frameworks.opf.metrics.MetricsIface.getMetric`.
-    """
-    return self.__metricsMgr.getMetrics()
-
-  def getMetricLabels(self):
-    """
-    :returns: (list) labels for the metrics that are being calculated
-    """
-    return self.__metricsMgr.getMetricLabels()
-
+    def getMetricLabels(self):
+        """
+        :returns: (list) labels for the metrics that are being calculated
+        """
+        return self.__metricsMgr.getMetricLabels()
 
 
 class _PhaseManager(object):
-  """ Manages iteration cycle phase drivers
-  """
-  def __init__(self, model, phaseSpecs):
-    """
-    model:   Model instance
-    phaseSpecs:   Iteration period description consisting of a sequence of
-                  IterationPhaseSpecXXXXX elements that are performed in the
-                  given order
+    """ Manages iteration cycle phase drivers
     """
 
-    self.__model = model
+    def __init__(self, model, phaseSpecs):
+        """
+        model:   Model instance
+        phaseSpecs:   Iteration period description consisting of a sequence of
+                      IterationPhaseSpecXXXXX elements that are performed in the
+                      given order
+        """
 
-    # Instantiate Iteration Phase drivers
-    self.__phases = tuple(map(lambda x: x._getImpl(model=model),
-                              phaseSpecs))
+        self.__model = model
 
-    # Init phase-management structures
-    if self.__phases:
-      self.__phaseCycler = itertools.cycle(self.__phases)
-      self.__advancePhase()
+        # Instantiate Iteration Phase drivers
+        self.__phases = tuple(map(lambda x: x._getImpl(model=model),
+                                  phaseSpecs))
 
-    return
+        # Init phase-management structures
+        if self.__phases:
+            self.__phaseCycler = itertools.cycle(self.__phases)
+            self.__advancePhase()
 
+        return
 
-  def __repr__(self):
-    return "%s(phases=%r)" % \
-                (self.__class__.__name__,
-                 self.__phases)
+    def __repr__(self):
+        return "%s(phases=%r)" % \
+            (self.__class__.__name__,
+             self.__phases)
 
+    def __advancePhase(self):
+        """ Advance to the next iteration cycle phase
+        """
+        self.__currentPhase = self.__phaseCycler.next()
+        self.__currentPhase.enterPhase()
 
-  def __advancePhase(self):
-    """ Advance to the next iteration cycle phase
-    """
-    self.__currentPhase = self.__phaseCycler.next()
-    self.__currentPhase.enterPhase()
+        return
 
-    return
+    def handleInputRecord(self, inputRecord):
+        """ Processes the given record according to the current phase
 
+        inputRecord:  record object formatted according to
+                      nupic.data.FileSource.getNext() result format.
 
-  def handleInputRecord(self, inputRecord):
-    """ Processes the given record according to the current phase
+        Returns:      An opf_utils.ModelResult object with the inputs and inferences
+                      after the current record is processed by the model
+        """
 
-    inputRecord:  record object formatted according to
-                  nupic.data.FileSource.getNext() result format.
+        results = self.__model.run(inputRecord)
 
-    Returns:      An opf_utils.ModelResult object with the inputs and inferences
-                  after the current record is processed by the model
-    """
+        shouldContinue = self.__currentPhase.advance()
+        if not shouldContinue:
+            self.__advancePhase()
 
-    results = self.__model.run(inputRecord)
-
-    shouldContinue = self.__currentPhase.advance()
-    if not shouldContinue:
-      self.__advancePhase()
-
-    return results
-
-
+        return results
 
 
 ###############################################################################
@@ -395,163 +381,159 @@ class _PhaseManager(object):
 ###############################################################################
 
 
-
 class _IterationPhase(object):
-  """ Interface for IterationPhaseXXXXX classes
-  """
-
-  __metaclass__ = ABCMeta
-
-  def __init__(self, nIters):
-    """
-    nIters:       Number of iterations; MUST be greater than 0
+    """ Interface for IterationPhaseXXXXX classes
     """
 
-    assert nIters > 0, "nIters=%s" % nIters
-    self.__nIters = nIters
+    __metaclass__ = ABCMeta
 
-    return
+    def __init__(self, nIters):
+        """
+        nIters:       Number of iterations; MUST be greater than 0
+        """
 
-  @abstractmethod
-  def enterPhase(self):
-    """
-    Performs initialization that is necessary upon entry to the phase. Must
-    be called before handleInputRecord() at the beginning of each phase
-    """
+        assert nIters > 0, "nIters=%s" % nIters
+        self.__nIters = nIters
 
-    self.__iter = iter(xrange(self.__nIters))
+        return
 
-    # Prime the iterator
-    self.__iter.next()
+    @abstractmethod
+    def enterPhase(self):
+        """
+        Performs initialization that is necessary upon entry to the phase. Must
+        be called before handleInputRecord() at the beginning of each phase
+        """
 
+        self.__iter = iter(xrange(self.__nIters))
 
-  def advance(self):
-    """ Advances the iteration;
+        # Prime the iterator
+        self.__iter.next()
 
-    Returns:      True if more iterations remain; False if this is the final
-                  iteration.
-    """
-    hasMore = True
-    try:
-      self.__iter.next()
-    except StopIteration:
-      self.__iter = None
-      hasMore = False
+    def advance(self):
+        """ Advances the iteration;
 
-    return hasMore
+        Returns:      True if more iterations remain; False if this is the final
+                      iteration.
+        """
+        hasMore = True
+        try:
+            self.__iter.next()
+        except StopIteration:
+            self.__iter = None
+            hasMore = False
 
+        return hasMore
 
 
 class _IterationPhaseLearnOnly(_IterationPhase):
-  """ This class implements the "learn-only" phase of the Iteration Cycle
-  """
-  def __init__(self, model, nIters):
-    """
-    model:        Model instance
-    nIters:       Number of iterations; MUST be greater than 0
+    """ This class implements the "learn-only" phase of the Iteration Cycle
     """
 
-    super(_IterationPhaseLearnOnly, self).__init__(nIters=nIters)
+    def __init__(self, model, nIters):
+        """
+        model:        Model instance
+        nIters:       Number of iterations; MUST be greater than 0
+        """
 
-    self.__model = model
-    return
+        super(_IterationPhaseLearnOnly, self).__init__(nIters=nIters)
 
-  def enterPhase(self):
-    """ [_IterationPhase method implementation]
-    Performs initialization that is necessary upon entry to the phase. Must
-    be called before handleInputRecord() at the beginning of each phase
-    """
-    super(_IterationPhaseLearnOnly, self).enterPhase()
-    self.__model.enableLearning()
-    self.__model.disableInference()
-    return
+        self.__model = model
+        return
 
+    def enterPhase(self):
+        """ [_IterationPhase method implementation]
+        Performs initialization that is necessary upon entry to the phase. Must
+        be called before handleInputRecord() at the beginning of each phase
+        """
+        super(_IterationPhaseLearnOnly, self).enterPhase()
+        self.__model.enableLearning()
+        self.__model.disableInference()
+        return
 
 
 class _IterationPhaseInferCommon(_IterationPhase):
-  """ Basic class providing common implementation for
-  _IterationPhaseInferOnly and _IterationPhaseLearnAndInfer classes
-  """
-  def __init__(self, model, nIters, inferenceArgs):
-    """
-    model:        Model instance
-    nIters:       Number of iterations; MUST be greater than 0
-    inferenceArgs:
-                  A dictionary of arguments required for inference. These
-                  depend on the InferenceType of the current model
+    """ Basic class providing common implementation for
+    _IterationPhaseInferOnly and _IterationPhaseLearnAndInfer classes
     """
 
-    super(_IterationPhaseInferCommon, self).__init__(nIters=nIters)
-    self._model = model
-    self._inferenceArgs = inferenceArgs
-    return
+    def __init__(self, model, nIters, inferenceArgs):
+        """
+        model:        Model instance
+        nIters:       Number of iterations; MUST be greater than 0
+        inferenceArgs:
+                      A dictionary of arguments required for inference. These
+                      depend on the InferenceType of the current model
+        """
 
-  def enterPhase(self):
-    """ [_IterationPhase method implementation]
-    Performs initialization that is necessary upon entry to the phase. Must
-    be called before handleInputRecord() at the beginning of each phase
-    """
-    super(_IterationPhaseInferCommon, self).enterPhase()
-    self._model.enableInference(inferenceArgs=self._inferenceArgs)
-    return
+        super(_IterationPhaseInferCommon, self).__init__(nIters=nIters)
+        self._model = model
+        self._inferenceArgs = inferenceArgs
+        return
 
+    def enterPhase(self):
+        """ [_IterationPhase method implementation]
+        Performs initialization that is necessary upon entry to the phase. Must
+        be called before handleInputRecord() at the beginning of each phase
+        """
+        super(_IterationPhaseInferCommon, self).enterPhase()
+        self._model.enableInference(inferenceArgs=self._inferenceArgs)
+        return
 
 
 class _IterationPhaseInferOnly(_IterationPhaseInferCommon):
-  """ This class implements the "infer-only" phase of the Iteration Cycle
-  """
-
-  def __init__(self, model, nIters, inferenceArgs):
-    """
-    model:        Model instance
-    nIters:       Number of iterations; MUST be greater than 0
-    inferenceArgs:
-                  A dictionary of arguments required for inference. These
-                  depend on the InferenceType of the current model
+    """ This class implements the "infer-only" phase of the Iteration Cycle
     """
 
-    super(_IterationPhaseInferOnly, self).__init__(
-      model=model,
-      nIters=nIters,
-      inferenceArgs=inferenceArgs)
-    return
+    def __init__(self, model, nIters, inferenceArgs):
+        """
+        model:        Model instance
+        nIters:       Number of iterations; MUST be greater than 0
+        inferenceArgs:
+                      A dictionary of arguments required for inference. These
+                      depend on the InferenceType of the current model
+        """
 
-  def enterPhase(self):
-    """ [_IterationPhase method implementation]
-    Performs initialization that is necessary upon entry to the phase. Must
-    be called before handleInputRecord() at the beginning of each phase
-    """
-    super(_IterationPhaseInferOnly, self).enterPhase()
-    self._model.disableLearning()
-    return
+        super(_IterationPhaseInferOnly, self).__init__(
+            model=model,
+            nIters=nIters,
+            inferenceArgs=inferenceArgs)
+        return
 
+    def enterPhase(self):
+        """ [_IterationPhase method implementation]
+        Performs initialization that is necessary upon entry to the phase. Must
+        be called before handleInputRecord() at the beginning of each phase
+        """
+        super(_IterationPhaseInferOnly, self).enterPhase()
+        self._model.disableLearning()
+        return
 
 
 class _IterationPhaseLearnAndInfer(_IterationPhaseInferCommon):
-  """ This class implements the "learn-and-infer" phase of the Iteration Cycle
-  """
-
-  def __init__(self, model, nIters, inferenceArgs):
-    """
-    model:        Model instance
-    nIters:       Number of iterations; MUST be greater than 0
-    inferenceArgs:
-                  A dictionary of arguments required for inference. These
-                  depend on the InferenceType of the current model
+    """ This class implements the "learn-and-infer" phase of the Iteration Cycle
     """
 
-    super(_IterationPhaseLearnAndInfer, self).__init__(
-      model=model,
-      nIters=nIters,
-      inferenceArgs=inferenceArgs)
+    def __init__(self, model, nIters, inferenceArgs):
+        """
+        model:        Model instance
+        nIters:       Number of iterations; MUST be greater than 0
+        inferenceArgs:
+                      A dictionary of arguments required for inference. These
+                      depend on the InferenceType of the current model
+        """
 
-    return
+        super(_IterationPhaseLearnAndInfer, self).__init__(
+            model=model,
+            nIters=nIters,
+            inferenceArgs=inferenceArgs)
 
-  def enterPhase(self):
-    """ [_IterationPhase method implementation]
-    Performs initialization that is necessary upon entry to the phase. Must
-    be called before handleInputRecord() at the beginning of each phase
-    """
-    super(_IterationPhaseLearnAndInfer, self).enterPhase()
-    self._model.enableLearning()
-    return
+        return
+
+    def enterPhase(self):
+        """ [_IterationPhase method implementation]
+        Performs initialization that is necessary upon entry to the phase. Must
+        be called before handleInputRecord() at the beginning of each phase
+        """
+        super(_IterationPhaseLearnAndInfer, self).enterPhase()
+        self._model.enableLearning()
+        return

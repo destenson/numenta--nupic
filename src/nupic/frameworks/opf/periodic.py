@@ -22,7 +22,6 @@
 from collections import namedtuple
 
 
-
 # Passed as parameter to ActivityMgr
 #
 # repeating: True if the activity is a repeating activite, False if one-shot
@@ -33,76 +32,72 @@ PeriodicActivityRequest = namedtuple("PeriodicActivityRequest",
                                      ("repeating", "period", "cb"))
 
 
-
 class PeriodicActivityMgr(object):
-  """
-  TODO: move to shared script so that we can share it with run_opf_experiment
-  """
-
-  # iteratorHolder: a list holding one iterator; we use a list so that we can
-  #           replace the iterator for repeating activities (a tuple would not
-  #           allow it if the field was an imutable value)
-  Activity = namedtuple("Activity", ("repeating",
-                                     "period",
-                                     "cb",
-                                     "iteratorHolder"))
-
-  def __init__(self, requestedActivities=[]):
     """
-    requestedActivities: a sequence of PeriodicActivityRequest elements
+    TODO: move to shared script so that we can share it with run_opf_experiment
     """
 
-    self.__activities = []
-    self.__appendActivities(requestedActivities)
+    # iteratorHolder: a list holding one iterator; we use a list so that we can
+    #           replace the iterator for repeating activities (a tuple would not
+    #           allow it if the field was an imutable value)
+    Activity = namedtuple("Activity", ("repeating",
+                                       "period",
+                                       "cb",
+                                       "iteratorHolder"))
 
-    return
+    def __init__(self, requestedActivities=[]):
+        """
+        requestedActivities: a sequence of PeriodicActivityRequest elements
+        """
 
+        self.__activities = []
+        self.__appendActivities(requestedActivities)
 
-  def addActivities(self, periodicActivities):
-    """ Adds activities
+        return
 
-    periodicActivities: A sequence of PeriodicActivityRequest elements
-    """
+    def addActivities(self, periodicActivities):
+        """ Adds activities
 
-    self.__appendActivities(periodicActivities)
+        periodicActivities: A sequence of PeriodicActivityRequest elements
+        """
 
-    return
+        self.__appendActivities(periodicActivities)
 
+        return
 
-  def tick(self):
-    """ Activity tick handler; services all activities
+    def tick(self):
+        """ Activity tick handler; services all activities
 
-    Returns:      True if controlling iterator says it's okay to keep going;
-                  False to stop
-    """
+        Returns:      True if controlling iterator says it's okay to keep going;
+                      False to stop
+        """
 
-    # Run activities whose time has come
-    for act in self.__activities:
-      if not act.iteratorHolder[0]:
-        continue
+        # Run activities whose time has come
+        for act in self.__activities:
+            if not act.iteratorHolder[0]:
+                continue
 
-      try:
-        next(act.iteratorHolder[0])
-      except StopIteration:
-        act.cb()
-        if act.repeating:
-          act.iteratorHolder[0] = iter(xrange(act.period-1))
-        else:
-          act.iteratorHolder[0] = None
+            try:
+                next(act.iteratorHolder[0])
+            except StopIteration:
+                act.cb()
+                if act.repeating:
+                    act.iteratorHolder[0] = iter(xrange(act.period-1))
+                else:
+                    act.iteratorHolder[0] = None
 
-    return True
+        return True
 
+    def __appendActivities(self, periodicActivities):
+        """
+        periodicActivities: A sequence of PeriodicActivityRequest elements
+        """
 
-  def __appendActivities(self, periodicActivities):
-    """
-    periodicActivities: A sequence of PeriodicActivityRequest elements
-    """
+        for req in periodicActivities:
+            act = self.Activity(repeating=req.repeating,
+                                period=req.period,
+                                cb=req.cb,
+                                iteratorHolder=[iter(xrange(req.period-1))])
+            self.__activities.append(act)
 
-    for req in periodicActivities:
-      act =   self.Activity(repeating=req.repeating,
-                            period=req.period,
-                            cb=req.cb,
-                            iteratorHolder=[iter(xrange(req.period-1))])
-      self.__activities.append(act)
-
-    return
+        return
